@@ -63,7 +63,10 @@ export function RoleNav() {
       aria-label="Jump to projects by role"
       className="pointer-events-auto fixed left-1/2 top-4 z-50 -translate-x-1/2"
     >
-      <ul className="flex max-w-[calc(100vw-1.5rem)] items-center gap-1 overflow-x-auto rounded-full border border-bone/15 bg-graphite/85 p-1 font-mono shadow-2xl backdrop-blur-md">
+      <ul
+        data-lenis-prevent
+        className="flex max-w-[calc(100vw-1.5rem)] items-center gap-1 overflow-x-auto overscroll-contain rounded-full border border-bone/15 bg-graphite/85 p-1 font-mono shadow-2xl backdrop-blur-md"
+      >
         {NAV.map((n) => {
           const isActive = active === n.id;
           return (

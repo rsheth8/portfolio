@@ -1,41 +1,26 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { profile, projectGroups } from "@/data/site";
+import type {
+  MessageParam,
+  ToolResultBlockParam,
+  ToolUseBlock,
+} from "@anthropic-ai/sdk/resources/messages";
+import { profile } from "@/data/site";
+import {
+  executePortfolioTool,
+  toAnthropicTools,
+} from "@/lib/mcp/tools";
 
 export const runtime = "nodejs";
 
-// One assistant grounded in the portfolio data. The system prompt is built from
-// the same data/site.ts the page renders, so the bot can never drift from
-// what's actually on the page.
 function buildSystemPrompt(): string {
-  // Group projects under their hiring-role heading so the bot can answer
-  // role-oriented questions ("any backend / ML experience?") accurately.
-  const projectLines = projectGroups
-    .map(
-      (g) =>
-        `${g.role}:\n` +
-        g.projects
-          .map(
-            (p) =>
-              `  - ${p.name} (${p.tech.join(", ")}): ${p.blurb}${
-                p.repo ? ` [code: ${p.repo}]` : ""
-              }`,
-          )
-          .join("\n"),
-    )
-    .join("\n\n");
+  return `You are the assistant on ${profile.name}'s portfolio site. Visitors ask about ${profile.name}'s work.
 
-  return `You are the assistant on ${profile.name}'s portfolio site. Visitors — recruiters, engineers, the curious — ask you about ${profile.name}'s work.
-
-About ${profile.name}: ${profile.tagline}
-Contact: ${profile.email}${profile.github ? `, GitHub ${profile.github}` : ""}
-
-Projects, grouped by the kind of role they fit:
-${projectLines}
+You have tools to read portfolio data (profile, projects, skills) and to fetch live GitHub repo stats. Use them when a visitor asks for specifics, comparisons, or up-to-date GitHub numbers — don't guess.
 
 Rules:
-- Answer ONLY from the information above. If you don't know something (a metric, a date, a detail not listed), say so plainly and point them to ${profile.email}. Never invent facts, numbers, or claims about ${profile.name}.
-- Be concise and conversational — two or three sentences for most questions. This is a chat widget, not an essay.
-- You can recommend which projects fit an interest the visitor mentions.
+- Ground answers in tool results and the portfolio data they return. If something isn't available, say so and point them to ${profile.email}. Never invent facts, metrics, or dates.
+- Be concise — two or three sentences for most questions.
+- Recommend projects that match the visitor's interest when helpful.
 - Speak about ${profile.name} in the third person.`;
 }
 
@@ -45,7 +30,64 @@ interface ChatMessage {
 }
 
 const MODEL = "claude-opus-4-8";
-const MAX_TURNS = 20; // cap conversation length to bound cost/abuse
+const MAX_TURNS = 20;
+const MAX_TOOL_ROUNDS = 5;
+
+function toApiMessages(messages: ChatMessage[]): MessageParam[] {
+  return messages.map((m) => ({ role: m.role, content: m.content }));
+}
+
+function extractText(content: Anthropic.Messages.ContentBlock[]): string {
+  return content
+    .filter((b): b is Anthropic.Messages.TextBlock => b.type === "text")
+    .map((b) => b.text)
+    .join("");
+}
+
+function extractToolUses(content: Anthropic.Messages.ContentBlock[]): ToolUseBlock[] {
+  return content.filter(
+    (b): b is ToolUseBlock => b.type === "tool_use",
+  );
+}
+
+async function runToolRound(
+  client: Anthropic,
+  messages: MessageParam[],
+): Promise<string> {
+  const tools = toAnthropicTools();
+
+  for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+    const response = await client.messages.create({
+      model: MODEL,
+      max_tokens: 1024,
+      system: buildSystemPrompt(),
+      tools,
+      messages,
+    });
+
+    if (response.stop_reason !== "tool_use") {
+      return extractText(response.content);
+    }
+
+    const toolUses = extractToolUses(response.content);
+    messages.push({ role: "assistant", content: response.content });
+
+    const toolResults: ToolResultBlockParam[] = await Promise.all(
+      toolUses.map(async (use) => ({
+        type: "tool_result" as const,
+        tool_use_id: use.id,
+        content: await executePortfolioTool(
+          use.name,
+          use.input as Record<string, unknown>,
+        ),
+      })),
+    );
+
+    messages.push({ role: "user", content: toolResults });
+  }
+
+  return "I hit the tool-use limit — try a simpler question or email Rahil directly.";
+}
 
 export async function POST(req: Request) {
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -67,7 +109,6 @@ export async function POST(req: Request) {
     return Response.json({ error: "No messages provided." }, { status: 400 });
   }
 
-  // Sanitize: keep only well-formed turns, trim to the most recent MAX_TURNS.
   const clean = messages
     .filter(
       (m): m is ChatMessage =>
@@ -87,21 +128,14 @@ export async function POST(req: Request) {
   }
 
   const client = new Anthropic();
+  const apiMessages = toApiMessages(clean);
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
-        const llm = client.messages.stream({
-          model: MODEL,
-          max_tokens: 1024,
-          system: buildSystemPrompt(),
-          messages: clean,
-        });
-        llm.on("text", (delta) => {
-          controller.enqueue(encoder.encode(delta));
-        });
-        await llm.finalMessage();
+        const text = await runToolRound(client, apiMessages);
+        controller.enqueue(encoder.encode(text));
       } catch (err) {
         const msg =
           err instanceof Error ? err.message : "The assistant hit an error.";

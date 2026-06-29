@@ -11,7 +11,7 @@ interface Msg {
 const SUGGESTIONS = [
   "What kind of work does Rahil do?",
   "Tell me about the ML projects.",
-  "What should I look at first?",
+  "How many stars does MyDrive have on GitHub?",
 ];
 
 /**
@@ -29,11 +29,27 @@ export function AskAI() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const stickToBottomRef = useRef(true);
 
-  // Keep the transcript pinned to the latest message.
+  function syncStickToBottom() {
+    const el = scrollRef.current;
+    if (!el) return;
+    stickToBottomRef.current =
+      el.scrollHeight - el.scrollTop - el.clientHeight < 48;
+  }
+
+  // Pin to the latest message unless the user scrolled up to read earlier turns.
   useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !stickToBottomRef.current) return;
+    el.scrollTo({ top: el.scrollHeight });
+  }, [messages]);
+
+  useEffect(() => {
+    if (!open) return;
+    stickToBottomRef.current = true;
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-  }, [messages, open]);
+  }, [open]);
 
   async function send(text: string) {
     const trimmed = text.trim();
@@ -41,6 +57,7 @@ export function AskAI() {
 
     const history: Msg[] = [...messages, { role: "user", content: trimmed }];
     // Add the user turn plus an empty assistant turn we'll stream into.
+    stickToBottomRef.current = true;
     setMessages([...history, { role: "assistant", content: "" }]);
     setInput("");
     setBusy(true);
@@ -96,7 +113,8 @@ export function AskAI() {
             exit={{ opacity: 0, y: 16, scale: 0.96 }}
             transition={{ type: "spring", stiffness: 320, damping: 28 }}
             style={{ transformOrigin: "bottom left" }}
-            className="absolute bottom-full left-0 mb-3 flex h-[28rem] w-[22rem] max-w-[calc(100vw-3rem)] flex-col rounded-2xl border border-bone/15 bg-graphite/95 font-mono text-xs text-cream shadow-2xl backdrop-blur-xl"
+            data-lenis-prevent
+            className="absolute bottom-full left-0 mb-3 flex h-[28rem] w-[22rem] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-2xl border border-bone/15 bg-graphite/95 font-mono text-xs text-cream shadow-2xl backdrop-blur-xl"
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-bone/10 px-4 py-3">
@@ -115,7 +133,9 @@ export function AskAI() {
             {/* Transcript */}
             <div
               ref={scrollRef}
-              className="flex-1 space-y-3 overflow-y-auto p-4"
+              onScroll={syncStickToBottom}
+              data-lenis-prevent
+              className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-4"
             >
               {messages.length === 0 && (
                 <div className="space-y-3">
