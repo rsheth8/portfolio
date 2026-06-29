@@ -1,6 +1,12 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { LenisProvider } from "@/components/LenisProvider";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 const SITE_URL = "https://portfolio-rsheth8s-projects.vercel.app";
 const TITLE = "Rahil Sheth — Portfolio";

@@ -1,8 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getAudioEngine } from "@/lib/audio/AudioEngine";
 import { useAudioState } from "@/lib/audio/useAudioAnalyser";
+import {
+  notifyCornerPanelOpen,
+  onCornerPanelOpen,
+} from "@/lib/ui/cornerPanels";
 
 /**
  * Bottom-right corner audio control.
@@ -19,6 +23,18 @@ export function AudioSourcePicker() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const engine = getAudioEngine();
+
+  useEffect(() => {
+    return onCornerPanelOpen("audio", () => setExpanded(false));
+  }, []);
+
+  function toggleExpanded() {
+    setExpanded((wasExpanded) => {
+      const next = !wasExpanded;
+      if (next) notifyCornerPanelOpen("audio");
+      return next;
+    });
+  }
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     setError(null);
@@ -57,11 +73,11 @@ export function AudioSourcePicker() {
   }
 
   return (
-    <div className="pointer-events-auto fixed bottom-6 right-6 z-50">
+    <div className="pointer-events-auto fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-50 sm:bottom-6 sm:right-6">
       {/* Collapsed pill — always visible */}
       <button
-        onClick={() => setExpanded((e) => !e)}
-        className="flex items-center gap-3 rounded-full border border-bone/15 bg-graphite/85 px-4 py-2.5 font-mono text-xs uppercase tracking-wider text-cream backdrop-blur-md shadow-2xl hover:border-bass/40 transition-colors"
+        onClick={toggleExpanded}
+        className="flex min-h-[44px] max-w-[calc(100vw-7rem-env(safe-area-inset-left,0px)-env(safe-area-inset-right,0px))] items-center gap-2 rounded-full border border-bone/15 bg-graphite/85 px-4 py-2.5 font-mono text-xs uppercase tracking-wider text-cream shadow-2xl backdrop-blur-md transition-colors hover:border-bass/40 sm:max-w-none sm:gap-3"
       >
         {/* Status indicator: pulsing dot when playing */}
         <span
@@ -71,7 +87,7 @@ export function AudioSourcePicker() {
               : "bg-mute"
           }`}
         />
-        <span className="text-bone">
+        <span className="truncate text-bone">
           {state.kind === "none"
             ? "Pick audio"
             : truncate(state.trackName, 18)}
@@ -81,7 +97,10 @@ export function AudioSourcePicker() {
 
       {/* Expanded panel */}
       {expanded && (
-        <div className="absolute bottom-full right-0 mb-3 w-80 rounded-2xl border border-bone/15 bg-graphite/95 p-5 font-mono text-xs text-cream backdrop-blur-xl shadow-2xl">
+        <div
+          data-lenis-prevent
+          className="fixed inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] max-h-[min(32rem,calc(100dvh-7.5rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)))] overflow-y-auto overscroll-contain rounded-2xl border border-bone/15 bg-graphite/95 p-5 font-mono text-xs text-cream shadow-2xl backdrop-blur-xl sm:absolute sm:inset-x-auto sm:bottom-full sm:right-0 sm:mb-3 sm:max-h-none sm:w-80 sm:max-w-[calc(100vw-3rem)]"
+        >
           <div className="mb-4 text-[10px] uppercase tracking-[0.25em] text-mute">
             Source
           </div>
@@ -125,7 +144,7 @@ export function AudioSourcePicker() {
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   placeholder="https://… (mp3, public stream)"
-                  className="min-w-0 flex-1 bg-transparent text-[11px] text-cream placeholder:text-mute focus:outline-none"
+                  className="min-h-[44px] min-w-0 flex-1 bg-transparent text-base text-cream placeholder:text-mute focus:outline-none sm:min-h-0 sm:text-[11px]"
                 />
                 <button
                   type="submit"

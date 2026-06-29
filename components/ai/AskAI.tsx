@@ -2,6 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import {
+  notifyCornerPanelOpen,
+  onCornerPanelOpen,
+} from "@/lib/ui/cornerPanels";
 
 interface Msg {
   role: "user" | "assistant";
@@ -50,6 +54,19 @@ export function AskAI() {
     stickToBottomRef.current = true;
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [open]);
+
+  // On mobile, only one corner panel should be open at a time.
+  useEffect(() => {
+    return onCornerPanelOpen("ai", () => setOpen(false));
+  }, []);
+
+  function toggleOpen() {
+    setOpen((wasOpen) => {
+      const next = !wasOpen;
+      if (next) notifyCornerPanelOpen("ai");
+      return next;
+    });
+  }
 
   async function send(text: string) {
     const trimmed = text.trim();
@@ -103,7 +120,7 @@ export function AskAI() {
   }
 
   return (
-    <div className="pointer-events-auto fixed bottom-6 left-6 z-50">
+    <div className="pointer-events-auto fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-[max(1rem,env(safe-area-inset-left))] z-50 sm:bottom-6 sm:left-6">
       {/* Expanded chat panel */}
       <AnimatePresence>
         {open && (
@@ -114,7 +131,7 @@ export function AskAI() {
             transition={{ type: "spring", stiffness: 320, damping: 28 }}
             style={{ transformOrigin: "bottom left" }}
             data-lenis-prevent
-            className="absolute bottom-full left-0 mb-3 flex h-[28rem] w-[22rem] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-2xl border border-bone/15 bg-graphite/95 font-mono text-xs text-cream shadow-2xl backdrop-blur-xl"
+            className="fixed inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] flex max-h-[min(28rem,calc(100dvh-7.5rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)))] flex-col overflow-hidden rounded-2xl border border-bone/15 bg-graphite/95 font-mono text-xs text-cream shadow-2xl backdrop-blur-xl sm:absolute sm:inset-x-auto sm:bottom-full sm:left-0 sm:mb-3 sm:h-[28rem] sm:w-[22rem] sm:max-h-none sm:max-w-[calc(100vw-3rem)]"
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-bone/10 px-4 py-3">
@@ -123,7 +140,7 @@ export function AskAI() {
               </span>
               <button
                 onClick={() => setOpen(false)}
-                className="text-mute transition-colors hover:text-cream"
+                className="min-h-[44px] min-w-[44px] text-mute transition-colors hover:text-cream sm:min-h-0 sm:min-w-0"
                 aria-label="Close chat"
               >
                 ✕
@@ -148,7 +165,7 @@ export function AskAI() {
                       <button
                         key={s}
                         onClick={() => send(s)}
-                        className="block w-full rounded-lg border border-bone/15 bg-ink/50 px-3 py-2 text-left text-bone/80 transition-colors hover:border-mid/50 hover:text-cream"
+                        className="block w-full rounded-lg border border-bone/15 bg-ink/50 px-3 py-2.5 text-left text-bone/80 transition-colors hover:border-mid/50 hover:text-cream sm:py-2"
                       >
                         {s}
                       </button>
@@ -190,13 +207,17 @@ export function AskAI() {
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                onFocus={(e) => {
+                  // Keep the composer visible when the mobile keyboard opens.
+                  e.currentTarget.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                }}
                 placeholder="Type a question…"
-                className="min-w-0 flex-1 rounded-lg border border-bone/15 bg-ink/60 px-3 py-2 text-[11px] text-cream placeholder:text-mute focus:border-mid/50 focus:outline-none"
+                className="min-h-[44px] min-w-0 flex-1 rounded-lg border border-bone/15 bg-ink/60 px-3 py-2 text-base text-cream placeholder:text-mute focus:border-mid/50 focus:outline-none sm:min-h-0 sm:text-[11px]"
               />
               <button
                 type="submit"
                 disabled={busy || !input.trim()}
-                className="rounded-lg border border-mid/40 px-3 py-2 text-[10px] uppercase tracking-wider text-mid transition-colors hover:bg-mid/10 disabled:opacity-40"
+                className="min-h-[44px] rounded-lg border border-mid/40 px-3 py-2 text-[10px] uppercase tracking-wider text-mid transition-colors hover:bg-mid/10 disabled:opacity-40 sm:min-h-0"
               >
                 {busy ? "…" : "Send"}
               </button>
@@ -207,11 +228,11 @@ export function AskAI() {
 
       {/* Collapsed pill — always visible */}
       <motion.button
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggleOpen}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         transition={{ type: "spring", stiffness: 400, damping: 22 }}
-        className="flex items-center gap-2 rounded-full border border-bone/15 bg-graphite/85 px-4 py-2.5 font-mono text-xs uppercase tracking-wider text-cream shadow-2xl backdrop-blur-md hover:border-mid/40"
+        className="flex min-h-[44px] items-center gap-2 rounded-full border border-bone/15 bg-graphite/85 px-4 py-2.5 font-mono text-xs uppercase tracking-wider text-cream shadow-2xl backdrop-blur-md hover:border-mid/40"
       >
         <motion.span
           className="text-mid"

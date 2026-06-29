@@ -68,7 +68,7 @@ export function Section({
         {scene}
 
         {/* Text overlay, anchored to bottom of viewport */}
-        <div className="relative z-10 flex h-full items-end px-8 pb-24 md:pb-32">
+        <div className="relative z-10 flex h-full items-end px-4 pb-28 sm:px-8 sm:pb-28 md:pb-32">
           <div className="mx-auto w-full max-w-5xl">
             <Heading label={label} title={title} copy={copy}>
               {children}
@@ -93,18 +93,18 @@ function Heading({
 }) {
   return (
     <>
-      <div className="mb-6 font-mono text-xs uppercase tracking-[0.4em] opacity-60">
+      <div className="mb-4 font-mono text-[10px] uppercase tracking-[0.25em] opacity-60 sm:mb-6 sm:text-xs sm:tracking-[0.4em]">
         {label}
       </div>
-      <h2 className="font-display text-5xl font-light leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] md:text-7xl">
+      <h2 className="font-display text-4xl font-light leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] sm:text-5xl md:text-7xl">
         {title}
       </h2>
       {copy && (
-        <p className="mt-8 max-w-2xl text-lg leading-relaxed opacity-80 drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)] md:text-xl">
+        <p className="mt-6 max-w-2xl text-base leading-relaxed opacity-80 drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)] sm:mt-8 sm:text-lg md:text-xl">
           {copy}
         </p>
       )}
-      {children && <div className="mt-12">{children}</div>}
+      {children && <div className="mt-8 sm:mt-12">{children}</div>}
     </>
   );
 }

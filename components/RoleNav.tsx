@@ -18,6 +18,12 @@ type LenisLike = {
 const NAV = projectGroups.map((g) => ({
   id: g.id,
   role: g.role,
+  shortRole:
+    g.id === "ml-projects"
+      ? "AI / ML"
+      : g.id === "infra-projects"
+        ? "Data Eng"
+        : "Software",
   accent: g.accent,
 }));
 
@@ -61,11 +67,11 @@ export function RoleNav() {
   return (
     <nav
       aria-label="Jump to projects by role"
-      className="pointer-events-auto fixed left-1/2 top-4 z-50 -translate-x-1/2"
+      className="pointer-events-auto fixed left-1/2 top-[max(0.75rem,env(safe-area-inset-top))] z-50 -translate-x-1/2 sm:top-4"
     >
       <ul
         data-lenis-prevent
-        className="flex max-w-[calc(100vw-1.5rem)] items-center gap-1 overflow-x-auto overscroll-contain rounded-full border border-bone/15 bg-graphite/85 p-1 font-mono shadow-2xl backdrop-blur-md"
+        className="flex max-w-[calc(100vw-1.5rem-env(safe-area-inset-left,0px)-env(safe-area-inset-right,0px))] items-center gap-1 overflow-x-auto overscroll-contain rounded-full border border-bone/15 bg-graphite/85 p-1 font-mono shadow-2xl backdrop-blur-md [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {NAV.map((n) => {
           const isActive = active === n.id;
@@ -75,13 +81,14 @@ export function RoleNav() {
                 onClick={() => go(n.id)}
                 aria-current={isActive ? "true" : undefined}
                 className={clsx(
-                  "whitespace-nowrap rounded-full border px-3 py-1.5 text-[10px] uppercase tracking-wider transition-colors",
+                  "min-h-[44px] whitespace-nowrap rounded-full border px-3 py-1.5 text-[10px] uppercase tracking-wider transition-colors sm:min-h-0",
                   isActive
                     ? accentActive[n.accent]
                     : "border-transparent text-bone/70 hover:text-cream",
                 )}
               >
-                {n.role}
+                <span className="sm:hidden">{n.shortRole}</span>
+                <span className="hidden sm:inline">{n.role}</span>
               </button>
             </li>
           );
