@@ -13,6 +13,7 @@ import {
   type ParsedMusicLink,
 } from "@/lib/streaming/parseMusicUrl";
 import { fetchSpotifyOEmbed } from "@/lib/streaming/spotifyOEmbed";
+import { SpotifyPicker } from "@/components/audio/SpotifyPicker";
 import {
   isSpotifyConfigured,
   getSpotifyRedirectUri,
@@ -288,6 +289,11 @@ export function MusicSearch({ onError, onLoading }: MusicSearchProps) {
             </div>
           </div>
         </form>
+      )}
+
+      {/* Spotify browse — search, playlists, liked songs */}
+      {spotifyConnected && (
+        <SpotifyPicker onError={onError} onLoading={onLoading} />
       )}
 
       {/* Spotify connect — only when client ID is configured */}

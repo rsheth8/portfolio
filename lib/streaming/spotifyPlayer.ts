@@ -13,6 +13,8 @@ const SCOPES = [
   "user-read-private",
   "user-modify-playback-state",
   "user-read-playback-state",
+  "playlist-read-private",
+  "user-library-read",
 ].join(" ");
 
 const TOKEN_KEY = "spotify-access-token";
