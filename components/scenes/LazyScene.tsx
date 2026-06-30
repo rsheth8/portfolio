@@ -34,9 +34,10 @@ export function LazyScene({
     if (!el) return;
     const io = new IntersectionObserver(
       ([entry]) => setNear(entry.isIntersecting),
-      // Pre-mount a viewport early and keep it alive a viewport past, so the
-      // scene is ready before it scrolls in and there's no pop on the way out.
-      { rootMargin: "100% 0px 100% 0px" },
+      // Pre-mount half a viewport early so the context is created before the
+      // scene scrolls in (its fade-in hides the init), but keep the simultaneous
+      // mounted count low to avoid hitting per-tab WebGL context limits.
+      { rootMargin: "50% 0px 50% 0px" },
     );
     io.observe(el);
     return () => io.disconnect();
@@ -51,16 +52,16 @@ export function LazyScene({
     );
   }
 
+  // The poster always renders as the base layer; the canvas (which fades in on
+  // its first frame) sits on top. So there's never a black gap — before mount,
+  // during init, or if the GL context is lost — the poster shows through.
   return (
     <div ref={ref} className="absolute inset-0">
-      {near ? (
-        children
-      ) : (
-        <div
-          className={`absolute inset-0 bg-gradient-to-br ${poster} via-ink to-ink opacity-70`}
-          aria-hidden
-        />
-      )}
+      <div
+        className={`absolute inset-0 bg-gradient-to-br ${poster} via-ink to-ink`}
+        aria-hidden
+      />
+      {near && children}
     </div>
   );
 }
