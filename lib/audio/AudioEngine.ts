@@ -41,6 +41,7 @@ class AudioEngineSingleton {
   private demoNodes: AudioNode[] = [];
   private demoTimer: number | null = null;
   private noiseBuffer: AudioBuffer | null = null;
+  private iosUnlocked = false;
 
   private freqData: Uint8Array = new Uint8Array(0);
   private timeData: Uint8Array = new Uint8Array(0);
@@ -74,11 +75,42 @@ class AudioEngineSingleton {
       this.gain.gain.value = this.state.volume;
       this.gain.connect(this.analyser);
       this.analyser.connect(this.ctx.destination);
+
+      // iOS suspends the context on interruptions (calls, route changes, the
+      // app backgrounding). Auto-resume so audio comes back without a re-tap.
+      this.ctx.addEventListener("statechange", () => {
+        const s = this.ctx?.state as string | undefined;
+        if (s === "interrupted" || s === "suspended") {
+          this.ctx?.resume().catch(() => {});
+        }
+      });
     }
-    if (this.ctx.state === "suspended") {
+
+    // iOS Safari keeps Web Audio silent until a sound node is started inside a
+    // user gesture — play a one-sample silent buffer to unlock it. Must run
+    // synchronously (before the resume await) so it's still within the gesture.
+    this.unlockIOS();
+
+    const state = this.ctx.state as string;
+    if (state === "suspended" || state === "interrupted") {
       await this.ctx.resume();
     }
     return this.ctx;
+  }
+
+  /** One-time iOS Web Audio unlock — a silent buffer started in the gesture. */
+  private unlockIOS() {
+    if (this.iosUnlocked || !this.ctx) return;
+    try {
+      const buffer = this.ctx.createBuffer(1, 1, 22050);
+      const source = this.ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(this.ctx.destination);
+      source.start(0);
+      this.iosUnlocked = true;
+    } catch {
+      // non-fatal — context may already be unlocked
+    }
   }
 
   /** Pull the latest FFT frame into the shared buffer. Called every frame

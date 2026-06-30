@@ -13,7 +13,16 @@ const STEPS = [
   { id: "consumer-projects", label: "Software" },
   { id: "contact", label: "Contact" },
 ];
-const DWELL_MS = 3200;
+/**
+ * Touch devices get a longer dwell and a gentler, slower scroll — the desktop
+ * pace feels abrupt and jarring on a phone where each section fills the screen.
+ */
+function tourTimings() {
+  const mobile =
+    typeof window !== "undefined" &&
+    window.matchMedia("(pointer: coarse)").matches;
+  return mobile ? { dwell: 5200, scroll: 2.6 } : { dwell: 3200, scroll: 1.6 };
+}
 
 type LenisLike = {
   scrollTo: (
@@ -32,6 +41,7 @@ export function GuidedTour() {
   const [step, setStep] = useState(0);
   const timer = useRef<number | null>(null);
   const stepRef = useRef(0);
+  const timing = useRef(tourTimings());
 
   const clearTimer = () => {
     if (timer.current) {
@@ -44,7 +54,7 @@ export function GuidedTour() {
     const el = document.getElementById(STEPS[i].id);
     if (!el) return;
     const lenis = (window as unknown as { __lenis?: LenisLike }).__lenis;
-    if (lenis) lenis.scrollTo(el, { offset: 0, duration: 1.6 });
+    if (lenis) lenis.scrollTo(el, { offset: 0, duration: timing.current.scroll });
     else el.scrollIntoView({ behavior: "smooth" });
   }
 
@@ -57,10 +67,11 @@ export function GuidedTour() {
     stepRef.current = next;
     setStep(next);
     goTo(next);
-    timer.current = window.setTimeout(advance, DWELL_MS);
+    timer.current = window.setTimeout(advance, timing.current.dwell);
   }
 
   async function start() {
+    timing.current = tourTimings(); // re-read in case orientation changed
     setRunning(true);
     stepRef.current = 0;
     setStep(0);
@@ -71,7 +82,7 @@ export function GuidedTour() {
       // visuals still react to whatever else might be playing
     }
     goTo(0);
-    timer.current = window.setTimeout(advance, DWELL_MS);
+    timer.current = window.setTimeout(advance, timing.current.dwell);
   }
 
   function stop() {
@@ -82,7 +93,7 @@ export function GuidedTour() {
   useEffect(() => () => clearTimer(), []);
 
   return (
-    <div className="pointer-events-auto fixed left-[max(0.75rem,env(safe-area-inset-left))] top-[max(0.75rem,env(safe-area-inset-top))] z-40 sm:left-4 sm:top-4">
+    <div className="pointer-events-auto fixed left-[max(0.75rem,env(safe-area-inset-left))] top-[calc(env(safe-area-inset-top)+4.75rem)] z-40 sm:left-4 sm:top-4">
       {running ? (
         <div className="flex items-center gap-2 rounded-full border border-accent/40 bg-graphite/90 px-3 py-2 font-mono text-[10px] uppercase tracking-wider text-cream shadow-2xl backdrop-blur-md">
           <span className="hidden text-accent sm:inline">Touring ·</span>

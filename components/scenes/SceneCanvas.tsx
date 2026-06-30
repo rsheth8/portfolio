@@ -1,6 +1,6 @@
 "use client";
 
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
 import {
   Suspense,
   useEffect,
@@ -10,6 +10,36 @@ import {
 } from "react";
 import * as THREE from "three";
 import { getQualityProfile } from "@/lib/ui/deviceTier";
+
+/** Aspect ratio at/above which we use the scene's authored FOV (wide desktop). */
+const DESKTOP_ASPECT = 1.6;
+
+/**
+ * Keeps the horizontal framing consistent across aspect ratios. Scenes are
+ * authored for wide desktop; on a tall, narrow phone the same FOV crops the
+ * animation at the sides. We widen the vertical FOV as the viewport narrows so
+ * roughly the same content stays in frame — then commit it to the projection
+ * matrix (the scenes only move camera.position, never the FOV, so this sticks).
+ */
+function ResponsiveCamera({ baseFov }: { baseFov: number }) {
+  const camera = useThree((s) => s.camera);
+  const size = useThree((s) => s.size);
+
+  useEffect(() => {
+    if (!(camera instanceof THREE.PerspectiveCamera)) return;
+    const aspect = size.width / Math.max(1, size.height);
+    let fov = baseFov;
+    if (aspect < DESKTOP_ASPECT) {
+      const base = THREE.MathUtils.degToRad(baseFov);
+      const widened = 2 * Math.atan(Math.tan(base / 2) * (DESKTOP_ASPECT / aspect));
+      fov = Math.min(95, THREE.MathUtils.radToDeg(widened));
+    }
+    camera.fov = fov;
+    camera.updateProjectionMatrix();
+  }, [camera, size, baseFov]);
+
+  return null;
+}
 
 /**
  * Shared Canvas wrapper for every WebGL scene. Built for consistent, smooth
@@ -92,6 +122,7 @@ export function SceneCanvas({
           canvas.addEventListener("webglcontextrestored", () => setLost(false));
         }}
       >
+        <ResponsiveCamera baseFov={fov} />
         <Suspense fallback={null}>{children}</Suspense>
       </Canvas>
 
