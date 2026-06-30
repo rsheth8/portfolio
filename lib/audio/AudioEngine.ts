@@ -199,8 +199,8 @@ class AudioEngineSingleton {
 
   /**
    * Spotify Web Playback SDK routes audio outside our graph — update UI state
-   * so transport controls reflect what's playing. Visuals pulse via a gentle
-   * synthetic energy ramp in useAudioAnalyser when externalPlayback is set.
+   * so transport controls reflect what's playing. Visuals sync to Spotify's
+   * Audio Analysis API via spotifyVisualSync when externalPlayback is set.
    */
   setExternalPlayback(
     kind: "spotify",

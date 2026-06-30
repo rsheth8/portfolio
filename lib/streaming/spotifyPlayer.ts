@@ -6,6 +6,8 @@
  * sessionStorage for the tab session only.
  */
 
+import { getSpotifyVisualSync } from "./spotifyVisualSync";
+
 const CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID ?? "";
 const SCOPES = [
   "streaming",
@@ -141,8 +143,15 @@ interface SpotifyPlayer {
 
 interface SpotifyPlaybackState {
   paused: boolean;
+  position: number;
+  duration: number;
+  timestamp: number;
   track_window: {
-    current_track: { name: string; artists: { name: string }[] };
+    current_track: {
+      id: string | null;
+      name: string;
+      artists: { name: string }[];
+    };
   };
 }
 
@@ -269,7 +278,20 @@ export async function connectSpotifyPlayer(
   player.addListener("player_state_changed", (state) => {
     if (!state || !("track_window" in state)) return;
     const s = state as SpotifyPlaybackState;
-    const name = `${s.track_window.current_track.name} — ${s.track_window.current_track.artists[0]?.name ?? ""}`;
+    const track = s.track_window.current_track;
+    const name = `${track.name} — ${track.artists[0]?.name ?? ""}`;
+
+    if (track.id) {
+      getSpotifyVisualSync().updatePlayback({
+        trackId: track.id,
+        trackName: name,
+        positionMs: s.position,
+        durationMs: s.duration,
+        timestampMs: s.timestamp,
+        paused: s.paused,
+      });
+    }
+
     callbacks.onStateChange?.(!s.paused, name);
   });
 
@@ -287,10 +309,23 @@ export async function connectSpotifyPlayer(
   };
 }
 
+/** Extract Spotify track ID from a spotify:track: URI, if present. */
+export function trackIdFromUri(uri: string): string | null {
+  const m = uri.match(/:track:([a-zA-Z0-9]+)/);
+  return m?.[1] ?? null;
+}
+
 /** Start playback on this site's Web Player device. */
 export async function playSpotifyUri(uri: string): Promise<void> {
   const token = getStoredToken();
   if (!token) throw new Error("Connect Spotify first.");
+
+  const trackId = trackIdFromUri(uri);
+  if (trackId) {
+    getSpotifyVisualSync().prepareTrack(trackId);
+  } else {
+    getSpotifyVisualSync().markPlaying();
+  }
 
   const id = await waitForDevice();
   if (playerInstance) {
@@ -343,6 +378,7 @@ export function disconnectSpotify(): void {
   playerInstance = null;
   deviceId = null;
   resetDeviceReady();
+  getSpotifyVisualSync().clear();
   sessionStorage.removeItem(TOKEN_KEY);
   sessionStorage.removeItem(EXPIRES_KEY);
 }

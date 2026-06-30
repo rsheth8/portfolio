@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { getAudioEngine, type AudioState } from "./AudioEngine";
+import { getSpotifyVisualSync } from "@/lib/streaming/spotifyVisualSync";
 
 /**
  * Live audio bands. Updated in-place every rAF tick. Consumers read these
@@ -53,20 +54,18 @@ export function useAudioAnalyser(): React.RefObject<AudioBands> {
       const { freq, time } = engine.pullFrame();
       let bands = computeBands(freq);
 
-      // Spotify SDK audio doesn't route through our analyser — synthesize a
-      // beat-synced pulse so visuals still feel alive during full playback.
+      // Spotify SDK audio doesn't route through our analyser — derive bands
+      // from Spotify's Audio Analysis API synced to live playback position.
       if (engine.isExternalPlayback()) {
-        const t = performance.now() / 1000;
-        const beat = (Math.sin(t * Math.PI * 2 * (78 / 60)) + 1) / 2;
-        const hat = (Math.sin(t * Math.PI * 2 * (82 / 15)) + 1) / 2;
-        bands = {
-          bass: 0.25 + beat * 0.55,
-          lowMid: 0.2 + beat * 0.35,
-          mid: 0.18 + beat * 0.25,
-          highMid: 0.12 + hat * 0.3,
-          high: 0.1 + hat * 0.35,
-          energy: 0.2 + beat * 0.45,
+        const frame = getSpotifyVisualSync().getFrame();
+        bands = frame.bands;
+        ref.current = {
+          ...bands,
+          freq: frame.freq,
+          time: frame.time,
         };
+        raf = requestAnimationFrame(tick);
+        return;
       }
 
       ref.current = {
