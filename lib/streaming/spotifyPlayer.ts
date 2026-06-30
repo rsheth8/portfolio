@@ -128,7 +128,7 @@ interface SpotifyPlayer {
   disconnect: () => void;
   addListener: (
     event: string,
-    cb: (state: SpotifyPlaybackState | { message: string }) => void,
+    cb: (state: SpotifyPlaybackState | { message: string } | { device_id: string }) => void,
   ) => void;
   removeListener: (event: string) => void;
   getCurrentState: () => Promise<SpotifyPlaybackState | null>;
@@ -148,6 +148,48 @@ interface SpotifyPlaybackState {
 
 let sdkPromise: Promise<void> | null = null;
 let playerInstance: SpotifyPlayer | null = null;
+let deviceId: string | null = null;
+let deviceReadyPromise: Promise<string> | null = null;
+let deviceReadyResolve: ((id: string) => void) | null = null;
+
+export function isSpotifyPlayerReady(): boolean {
+  return Boolean(deviceId && playerInstance);
+}
+
+function resetDeviceReady() {
+  deviceId = null;
+  deviceReadyPromise = new Promise((resolve) => {
+    deviceReadyResolve = resolve;
+  });
+}
+
+// Seed the first wait promise.
+resetDeviceReady();
+
+async function waitForDevice(timeoutMs = 12000): Promise<string> {
+  if (deviceId) return deviceId;
+  if (!deviceReadyPromise) resetDeviceReady();
+  return Promise.race([
+    deviceReadyPromise!,
+    new Promise<string>((_, reject) =>
+      setTimeout(
+        () => reject(new Error("Spotify player not ready — try reconnecting.")),
+        timeoutMs,
+      ),
+    ),
+  ]);
+}
+
+async function transferPlaybackToWebPlayer(id: string, token: string) {
+  await fetch("https://api.spotify.com/v1/me/player", {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ device_ids: [id], play: false }),
+  });
+}
 
 function loadSdk(): Promise<void> {
   if (window.Spotify) return Promise.resolve();
@@ -193,6 +235,7 @@ export async function connectSpotifyPlayer(
     playerInstance.disconnect();
     playerInstance = null;
   }
+  resetDeviceReady();
 
   const player = new window.Spotify.Player({
     name: "Portfolio Audio Reactive",
@@ -201,10 +244,18 @@ export async function connectSpotifyPlayer(
   });
   playerInstance = player;
 
-  player.addListener("ready", () => callbacks.onReady?.());
-  player.addListener("not_ready", () =>
-    callbacks.onError?.("Spotify player disconnected."),
-  );
+  player.addListener("ready", (payload) => {
+    if ("device_id" in payload) {
+      deviceId = payload.device_id;
+      deviceReadyResolve?.(payload.device_id);
+      callbacks.onReady?.();
+    }
+  });
+  player.addListener("not_ready", () => {
+    deviceId = null;
+    resetDeviceReady();
+    callbacks.onError?.("Spotify player disconnected.");
+  });
   player.addListener("initialization_error", (payload) =>
     callbacks.onError?.("message" in payload ? payload.message : "Init error"),
   );
@@ -224,42 +275,74 @@ export async function connectSpotifyPlayer(
 
   const connected = await player.connect();
   if (!connected) throw new Error("Could not connect to Spotify.");
-  // iOS Safari requires explicit element activation before audio plays.
-  await player.activateElement();
+
+  // Block until the SDK exposes a device_id — required for the play API.
+  await waitForDevice();
 
   return () => {
     player.disconnect();
     playerInstance = null;
+    deviceId = null;
+    resetDeviceReady();
   };
 }
 
-/** Start playback of a Spotify URI (track / album / playlist). */
+/** Start playback on this site's Web Player device. */
 export async function playSpotifyUri(uri: string): Promise<void> {
   const token = getStoredToken();
   if (!token) throw new Error("Connect Spotify first.");
 
+  const id = await waitForDevice();
+  if (playerInstance) {
+    // Must run inside the user's click — unlocks audio on iOS Safari.
+    await playerInstance.activateElement();
+  }
+
   const isTrack = uri.includes(":track:");
   const body = isTrack ? { uris: [uri] } : { context_uri: uri };
 
-  const res = await fetch("https://api.spotify.com/v1/me/player/play", {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
+  async function sendPlay() {
+    return fetch(
+      `https://api.spotify.com/v1/me/player/play?device_id=${encodeURIComponent(id)}`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      },
+    );
+  }
+
+  let res = await sendPlay();
+
+  // No active device — transfer to our web player and retry once.
+  if (res.status === 404) {
+    await transferPlaybackToWebPlayer(id, token);
+    res = await sendPlay();
+  }
 
   if (res.status === 204) return;
+
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Spotify playback failed: ${err}`);
+    let message = "Spotify playback failed.";
+    try {
+      const parsed = JSON.parse(err) as { error?: { message?: string } };
+      message = parsed.error?.message ?? message;
+    } catch {
+      if (err) message = err;
+    }
+    throw new Error(message);
   }
 }
 
 export function disconnectSpotify(): void {
   playerInstance?.disconnect();
   playerInstance = null;
+  deviceId = null;
+  resetDeviceReady();
   sessionStorage.removeItem(TOKEN_KEY);
   sessionStorage.removeItem(EXPIRES_KEY);
 }

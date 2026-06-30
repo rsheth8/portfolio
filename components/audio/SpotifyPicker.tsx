@@ -15,6 +15,7 @@ import {
 import { playSpotifyUri } from "@/lib/streaming/spotifyPlayer";
 
 interface SpotifyPickerProps {
+  playerReady: boolean;
   onError: (msg: string | null) => void;
   onLoading: (loading: boolean) => void;
 }
@@ -25,7 +26,7 @@ type PickerView = "search" | "playlists" | "liked";
  * Browse and play from a connected visitor's Spotify — search, playlists,
  * and liked songs. Shown only after OAuth + Web Playback SDK connect.
  */
-export function SpotifyPicker({ onError, onLoading }: SpotifyPickerProps) {
+export function SpotifyPicker({ playerReady, onError, onLoading }: SpotifyPickerProps) {
   const [view, setView] = useState<PickerView>("search");
   const [query, setQuery] = useState("");
   const [tracks, setTracks] = useState<SpotifyTrack[]>([]);
@@ -43,13 +44,20 @@ export function SpotifyPicker({ onError, onLoading }: SpotifyPickerProps) {
   const likedLoaded = useRef(false);
 
   const playUri = useCallback(
-    async (uri: string, id: string) => {
+    async (uri: string, id: string, label?: string) => {
+      if (!playerReady) {
+        onError("Spotify player is still starting — wait a moment and try again.");
+        return;
+      }
       onError(null);
       onLoading(true);
       setPlayingId(id);
       try {
         getAudioEngine().stop();
         await playSpotifyUri(uri);
+        if (label) {
+          getAudioEngine().setExternalPlayback("spotify", label, true);
+        }
       } catch (err) {
         setPlayingId(null);
         onError(err instanceof Error ? err.message : "Playback failed.");
@@ -57,7 +65,7 @@ export function SpotifyPicker({ onError, onLoading }: SpotifyPickerProps) {
         onLoading(false);
       }
     },
-    [onError, onLoading],
+    [playerReady, onError, onLoading],
   );
 
   const runSearch = useCallback(
@@ -125,8 +133,18 @@ export function SpotifyPicker({ onError, onLoading }: SpotifyPickerProps) {
         <span className="text-[10px] uppercase tracking-[0.2em] text-[#1DB954]">
           ♫ Your Spotify
         </span>
-        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#1DB954]" />
+        {playerReady ? (
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#1DB954]" />
+        ) : (
+          <span className="text-[10px] text-mute">starting…</span>
+        )}
       </div>
+
+      {!playerReady && (
+        <p className="mb-3 text-[10px] leading-relaxed text-mute">
+          Warming up the web player — a few seconds after connect.
+        </p>
+      )}
 
       {/* View tabs */}
       <div className="mb-3 flex gap-1 rounded-md border border-bone/10 bg-ink/50 p-0.5">
@@ -173,7 +191,14 @@ export function SpotifyPicker({ onError, onLoading }: SpotifyPickerProps) {
             <TrackList
               tracks={tracks}
               playingId={playingId}
-              onPlay={(t) => playUri(t.uri, t.id)}
+              disabled={!playerReady}
+              onPlay={(t) =>
+                playUri(
+                  t.uri,
+                  t.id,
+                  `${t.name} — ${t.artists.map((a) => a.name).join(", ")}`,
+                )
+              }
             />
           )}
         </>
@@ -242,8 +267,11 @@ export function SpotifyPicker({ onError, onLoading }: SpotifyPickerProps) {
           {selectedPlaylist && (
             <button
               type="button"
-              onClick={() => playUri(selectedPlaylist.uri, selectedPlaylist.id)}
-              className="mt-2 w-full min-h-[44px] rounded-lg border border-[#1DB954]/40 bg-[#1DB954]/15 py-2.5 text-[11px] uppercase tracking-wider text-[#1DB954] transition-colors hover:bg-[#1DB954]/25"
+              onClick={() =>
+                playUri(selectedPlaylist.uri, selectedPlaylist.id, selectedPlaylist.name)
+              }
+              disabled={!playerReady}
+              className="mt-2 w-full min-h-[44px] rounded-lg border border-[#1DB954]/40 bg-[#1DB954]/15 py-2.5 text-[11px] uppercase tracking-wider text-[#1DB954] transition-colors hover:bg-[#1DB954]/25 disabled:opacity-40"
             >
               ▶ Play playlist
             </button>
@@ -261,7 +289,14 @@ export function SpotifyPicker({ onError, onLoading }: SpotifyPickerProps) {
             <TrackList
               tracks={liked}
               playingId={playingId}
-              onPlay={(t) => playUri(t.uri, t.id)}
+              disabled={!playerReady}
+              onPlay={(t) =>
+                playUri(
+                  t.uri,
+                  t.id,
+                  `${t.name} — ${t.artists.map((a) => a.name).join(", ")}`,
+                )
+              }
             />
           )}
         </>
@@ -288,10 +323,12 @@ function PlaylistThumb({ playlist }: { playlist: SpotifyPlaylist }) {
 function TrackList({
   tracks,
   playingId,
+  disabled,
   onPlay,
 }: {
   tracks: SpotifyTrack[];
   playingId: string | null;
+  disabled?: boolean;
   onPlay: (track: SpotifyTrack) => void;
 }) {
   return (
@@ -306,8 +343,9 @@ function TrackList({
           <li key={track.id}>
             <button
               type="button"
+              disabled={disabled}
               onClick={() => onPlay(track)}
-              className={`flex w-full min-h-[44px] items-center gap-2 rounded-lg border px-2 py-2 text-left transition-colors ${
+              className={`flex w-full min-h-[44px] items-center gap-2 rounded-lg border px-2 py-2 text-left transition-colors disabled:opacity-40 ${
                 isPlaying
                   ? "border-[#1DB954]/50 bg-[#1DB954]/10"
                   : "border-bone/10 bg-ink/30 hover:border-[#1DB954]/30 hover:bg-[#1DB954]/5"

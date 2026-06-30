@@ -22,6 +22,7 @@ import {
   connectSpotifyPlayer,
   playSpotifyUri,
   disconnectSpotify,
+  isSpotifyPlayerReady,
 } from "@/lib/streaming/spotifyPlayer";
 
 type Tab = "search" | "link";
@@ -43,6 +44,7 @@ export function MusicSearch({ onError, onLoading }: MusicSearchProps) {
   const [results, setResults] = useState<iTunesTrack[]>([]);
   const [searching, setSearching] = useState(false);
   const [spotifyConnected, setSpotifyConnected] = useState(false);
+  const [spotifyPlayerReady, setSpotifyPlayerReady] = useState(false);
   const [parsedLink, setParsedLink] = useState<ParsedMusicLink | null>(null);
   const [linkMeta, setLinkMeta] = useState<{
     title: string;
@@ -61,6 +63,7 @@ export function MusicSearch({ onError, onLoading }: MusicSearchProps) {
     (async () => {
       try {
         const teardown = await connectSpotifyPlayer({
+          onReady: () => setSpotifyPlayerReady(true),
           onStateChange: (playing, trackName) => {
             getAudioEngine().setExternalPlayback("spotify", trackName, playing);
           },
@@ -190,6 +193,7 @@ export function MusicSearch({ onError, onLoading }: MusicSearchProps) {
         disconnectSpotify();
         getAudioEngine().stopExternalPlayback();
         setSpotifyConnected(false);
+        setSpotifyPlayerReady(false);
         return;
       }
       await startSpotifyAuth();
@@ -293,7 +297,11 @@ export function MusicSearch({ onError, onLoading }: MusicSearchProps) {
 
       {/* Spotify browse — search, playlists, liked songs */}
       {spotifyConnected && (
-        <SpotifyPicker onError={onError} onLoading={onLoading} />
+        <SpotifyPicker
+          playerReady={spotifyPlayerReady || isSpotifyPlayerReady()}
+          onError={onError}
+          onLoading={onLoading}
+        />
       )}
 
       {/* Spotify connect — only when client ID is configured */}
