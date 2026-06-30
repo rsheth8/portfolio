@@ -69,7 +69,7 @@ export function KeyboardControls() {
       if (e.key === " " || e.code === "Space") {
         const engine = getAudioEngine();
         const s = engine.getState();
-        if (s.kind === "file" || s.kind === "url") {
+        if (s.kind === "file" || s.kind === "url" || s.kind === "demo") {
           e.preventDefault();
           if (s.isPlaying) engine.pause();
           else void engine.resume();

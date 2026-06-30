@@ -427,11 +427,35 @@ class AudioEngineSingleton {
   }
 
   pause() {
+    // The generative demo has no media element — silence it by stopping the
+    // scheduler and disconnecting its mix bus. resume() regenerates the loop.
+    if (this.state.kind === "demo") {
+      if (this.demoTimer !== null) {
+        clearInterval(this.demoTimer);
+        this.demoTimer = null;
+      }
+      this.demoNodes.forEach((n) => {
+        try {
+          n.disconnect();
+        } catch {
+          // already disconnected
+        }
+      });
+      this.demoNodes = [];
+      this.setState({ isPlaying: false });
+      return;
+    }
     if (this.currentAudioElement) this.currentAudioElement.pause();
     this.setState({ isPlaying: false });
   }
 
   async resume() {
+    if (this.state.kind === "demo") {
+      // Rebuild the generative beat (it's a loop, so there's no position to
+      // restore). playDemo re-creates the scheduler and sets isPlaying.
+      await this.playDemo();
+      return;
+    }
     if (this.currentAudioElement) {
       await this.currentAudioElement.play();
       this.setState({ isPlaying: true });

@@ -275,11 +275,7 @@ export function AudioSourcePicker() {
               <div className="flex items-center justify-between gap-3">
                 <button
                   onClick={togglePlay}
-                  disabled={
-                    state.kind === "mic" ||
-                    state.kind === "demo" ||
-                    state.kind === "spotify"
-                  }
+                  disabled={state.kind === "mic" || state.kind === "spotify"}
                   className="min-h-[44px] rounded-full border border-bone/20 px-4 py-1 text-[10px] uppercase tracking-wider text-cream hover:border-mid disabled:opacity-40 sm:min-h-0"
                 >
                   {state.isPlaying ? "❚❚ Pause" : "▶ Play"}
