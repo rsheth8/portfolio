@@ -445,6 +445,20 @@ class AudioEngineSingleton {
       this.setState({ isPlaying: false });
       return;
     }
+    // Mic has no media element — "pause" means stop feeding the analyser by
+    // disconnecting the source node (the stream stays open so resume is instant
+    // and doesn't re-prompt for permission).
+    if (this.state.kind === "mic") {
+      if (this.currentSourceNode) {
+        try {
+          this.currentSourceNode.disconnect();
+        } catch {
+          // already disconnected
+        }
+      }
+      this.setState({ isPlaying: false });
+      return;
+    }
     if (this.currentAudioElement) this.currentAudioElement.pause();
     this.setState({ isPlaying: false });
   }
@@ -454,6 +468,18 @@ class AudioEngineSingleton {
       // Rebuild the generative beat (it's a loop, so there's no position to
       // restore). playDemo re-creates the scheduler and sets isPlaying.
       await this.playDemo();
+      return;
+    }
+    if (this.state.kind === "mic") {
+      if (this.ctx && this.ctx.state === "suspended") await this.ctx.resume();
+      if (this.currentSourceNode && this.analyser) {
+        try {
+          this.currentSourceNode.connect(this.analyser);
+        } catch {
+          // already connected
+        }
+      }
+      this.setState({ isPlaying: true });
       return;
     }
     if (this.currentAudioElement) {

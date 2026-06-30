@@ -373,6 +373,17 @@ export async function playSpotifyUri(uri: string): Promise<void> {
   }
 }
 
+/** Pause the Web Playback SDK player. The player_state_changed listener will
+ *  propagate the new state to the engine + visual sync. */
+export async function pauseSpotifyPlayback(): Promise<void> {
+  if (playerInstance) await playerInstance.pause();
+}
+
+/** Resume the Web Playback SDK player. */
+export async function resumeSpotifyPlayback(): Promise<void> {
+  if (playerInstance) await playerInstance.resume();
+}
+
 export function disconnectSpotify(): void {
   playerInstance?.disconnect();
   playerInstance = null;

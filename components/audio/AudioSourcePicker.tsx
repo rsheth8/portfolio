@@ -8,6 +8,7 @@ import {
   onCornerPanelOpen,
 } from "@/lib/ui/cornerPanels";
 import { MusicSearch } from "@/components/audio/MusicSearch";
+import { togglePlayback } from "@/lib/audio/togglePlayback";
 import { resetTheme } from "@/lib/theme/extractColors";
 
 /**
@@ -140,12 +141,7 @@ export function AudioSourcePicker() {
   }
 
   async function togglePlay() {
-    if (state.kind === "spotify") {
-      // Spotify transport is handled by the SDK / native app
-      return;
-    }
-    if (state.isPlaying) engine.pause();
-    else await engine.resume();
+    await togglePlayback();
   }
 
   return (
@@ -275,7 +271,6 @@ export function AudioSourcePicker() {
               <div className="flex items-center justify-between gap-3">
                 <button
                   onClick={togglePlay}
-                  disabled={state.kind === "mic" || state.kind === "spotify"}
                   className="min-h-[44px] rounded-full border border-bone/20 px-4 py-1 text-[10px] uppercase tracking-wider text-cream hover:border-mid disabled:opacity-40 sm:min-h-0"
                 >
                   {state.isPlaying ? "❚❚ Pause" : "▶ Play"}
@@ -312,10 +307,9 @@ export function AudioSourcePicker() {
               )}
               {state.kind === "spotify" && (
                 <p className="text-[10px] leading-relaxed text-mute">
-                  Playing via Spotify — transport is controlled in the Spotify
-                  app. Spotify encrypts its audio, so the visuals are
-                  beat-matched from its track data (approximate). For exact
-                  sync, play it out loud and switch to{" "}
+                  Playing via Spotify (Premium). It encrypts its audio, so the
+                  visuals are beat-matched from its track data (approximate).
+                  For exact sync, play it out loud and switch to{" "}
                   <button
                     onClick={handleMic}
                     className="text-bass underline-offset-2 hover:underline"

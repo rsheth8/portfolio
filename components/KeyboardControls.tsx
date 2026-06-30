@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { getAudioEngine } from "@/lib/audio/AudioEngine";
+import { togglePlayback } from "@/lib/audio/togglePlayback";
 
 const SECTION_IDS = [
   "hero",
@@ -67,12 +68,11 @@ export function KeyboardControls() {
       if (isTyping(e.target) || e.metaKey || e.ctrlKey || e.altKey) return;
 
       if (e.key === " " || e.code === "Space") {
-        const engine = getAudioEngine();
-        const s = engine.getState();
-        if (s.kind === "file" || s.kind === "url" || s.kind === "demo") {
+        // Only hijack Space when something is loaded — otherwise leave the
+        // browser's default space-to-scroll alone.
+        if (getAudioEngine().getState().kind !== "none") {
           e.preventDefault();
-          if (s.isPlaying) engine.pause();
-          else void engine.resume();
+          void togglePlayback();
         }
       } else if (e.key === "ArrowRight" || e.key === "j" || e.key === "J") {
         e.preventDefault();
