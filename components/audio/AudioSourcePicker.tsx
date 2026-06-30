@@ -23,6 +23,7 @@ export function AudioSourcePicker() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [signalWarning, setSignalWarning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const engine = getAudioEngine();
@@ -30,6 +31,42 @@ export function AudioSourcePicker() {
   useEffect(() => {
     return onCornerPanelOpen("audio", () => setExpanded(false));
   }, []);
+
+  // A direct stream can play through the <audio> element while its FFT stays
+  // all-zeros — that happens when the host doesn't allow cross-origin reads, so
+  // the audio is audible but the visuals can't react. Detect that case (a few
+  // seconds of pure silence on the analyser while "playing") and warn, instead
+  // of leaving the visitor staring at a frozen scene. Only URLs are at risk;
+  // uploads are same-origin blobs and the mic/demo always carry signal.
+  useEffect(() => {
+    setSignalWarning(false);
+    if (state.kind !== "url" || !state.isPlaying) return;
+
+    let raf = 0;
+    let frames = 0;
+    let silent = 0;
+    const start = performance.now();
+    const check = () => {
+      const { freq } = engine.pullFrame();
+      let max = 0;
+      for (let i = 0; i < freq.length; i++) if (freq[i] > max) max = freq[i];
+      frames++;
+      if (max < 3) silent++;
+      if (performance.now() - start > 2500) {
+        if (frames > 0 && silent / frames > 0.95) setSignalWarning(true);
+        return;
+      }
+      raf = requestAnimationFrame(check);
+    };
+    // Give the stream a moment to actually start before sampling.
+    const t = window.setTimeout(() => {
+      raf = requestAnimationFrame(check);
+    }, 600);
+    return () => {
+      window.clearTimeout(t);
+      cancelAnimationFrame(raf);
+    };
+  }, [state.kind, state.isPlaying, engine]);
 
   function toggleExpanded() {
     setExpanded((wasExpanded) => {
@@ -220,6 +257,14 @@ export function AudioSourcePicker() {
             </div>
           )}
 
+          {signalWarning && (
+            <div className="mb-3 rounded border border-high/40 bg-high/10 px-3 py-2 text-[10px] leading-relaxed text-high">
+              Playing, but no signal is reaching the visuals — this stream
+              blocks cross-origin analysis. Try Upload, the music search, or a
+              CORS-friendly link.
+            </div>
+          )}
+
           {state.kind !== "none" && (
             <div className="space-y-3 border-t border-bone/10 pt-3">
               <div className="flex items-center justify-between gap-3">
@@ -265,8 +310,17 @@ export function AudioSourcePicker() {
               )}
               {state.kind === "spotify" && (
                 <p className="text-[10px] leading-relaxed text-mute">
-                  Playing via Spotify — use the Spotify app or desktop player
-                  for transport controls.
+                  Playing via Spotify — transport is controlled in the Spotify
+                  app. Spotify encrypts its audio, so the visuals are
+                  beat-matched from its track data (approximate). For exact
+                  sync, play it out loud and switch to{" "}
+                  <button
+                    onClick={handleMic}
+                    className="text-bass underline-offset-2 hover:underline"
+                  >
+                    Mic mode
+                  </button>
+                  .
                 </p>
               )}
             </div>

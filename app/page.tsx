@@ -83,7 +83,7 @@ export default function Page() {
         tone="ink"
         heightVh={200}
         scene={
-          <LazyScene poster="from-highMid/15">
+          <LazyScene poster="from-accent/15">
             <SkillsBackdrop />
           </LazyScene>
         }

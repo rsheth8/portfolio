@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { getAudioEngine, type AudioState } from "./AudioEngine";
+import { createMasterNormalizer } from "./bandNormalizer";
 import { getSpotifyVisualSync } from "@/lib/streaming/spotifyVisualSync";
 
 /**
@@ -49,18 +50,18 @@ export function useAudioAnalyser(): React.RefObject<AudioBands> {
 
   useEffect(() => {
     const engine = getAudioEngine();
+    const normalize = createMasterNormalizer();
     let raf = 0;
     const tick = () => {
       const { freq, time } = engine.pullFrame();
-      let bands = computeBands(freq);
 
       // Spotify SDK audio doesn't route through our analyser — derive bands
       // from Spotify's Audio Analysis API synced to live playback position.
+      // Those bands are already loudness-normalized, so skip the auto-gain.
       if (engine.isExternalPlayback()) {
         const frame = getSpotifyVisualSync().getFrame();
-        bands = frame.bands;
         ref.current = {
-          ...bands,
+          ...frame.bands,
           freq: frame.freq,
           time: frame.time,
         };
@@ -68,6 +69,9 @@ export function useAudioAnalyser(): React.RefObject<AudioBands> {
         return;
       }
 
+      // Real FFT path (file / mic / URL / iTunes preview / demo): auto-gain so
+      // quiet and loud tracks alike drive the visuals across their full range.
+      const bands = normalize(computeBands(freq));
       ref.current = {
         ...bands,
         freq,
