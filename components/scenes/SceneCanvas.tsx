@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { Suspense, type ReactNode } from "react";
+import { Suspense, useEffect, useState, type ReactNode } from "react";
 import * as THREE from "three";
 import { EffectComposer, Vignette } from "@react-three/postprocessing";
 
@@ -21,9 +21,19 @@ export function SceneCanvas({
   fov?: number;
   vignetteDarkness?: number;
 }) {
+  const [dpr, setDpr] = useState(1.5);
+
+  useEffect(() => {
+    const narrow = window.matchMedia("(max-width: 640px)");
+    const update = () => setDpr(narrow.matches ? 1 : 1.5);
+    update();
+    narrow.addEventListener("change", update);
+    return () => narrow.removeEventListener("change", update);
+  }, []);
+
   return (
     <Canvas
-      dpr={[1, 1.5]}
+      dpr={[1, dpr]}
       camera={{ fov, near: 0.01, far: 500, position: cameraPosition }}
       gl={{
         antialias: true,

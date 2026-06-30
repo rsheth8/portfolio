@@ -24,13 +24,17 @@ export function LenisProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    const isTouch =
+      typeof window !== "undefined" &&
+      window.matchMedia("(pointer: coarse)").matches;
+
     const lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
-      // Tuned for cinematic feel — slightly heavier than defaults so big sections breathe.
       wheelMultiplier: 1.0,
-      touchMultiplier: 1.5,
+      // Lighter touch scroll on phones — 1.5 felt too fast on mobile Safari.
+      touchMultiplier: isTouch ? 1.0 : 1.5,
     });
     lenisRef.current = lenis;
 

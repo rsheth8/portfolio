@@ -63,12 +63,12 @@ export function SkillsBackdrop() {
             key={g.color}
             data-glow
             data-band={g.band}
-            className="absolute rounded-full blur-[80px] will-change-transform"
+            className="absolute rounded-full blur-[60px] will-change-transform sm:blur-[80px]"
             style={{
               top: g.top,
               left: g.left,
-              width: g.size,
-              height: g.size,
+              width: `min(${g.size}px, 70vmin)`,
+              height: `min(${g.size}px, 70vmin)`,
               opacity: 0.22,
               transform: "translate(-50%, -50%)",
               background: `radial-gradient(circle, ${g.color} 0%, transparent 70%)`,

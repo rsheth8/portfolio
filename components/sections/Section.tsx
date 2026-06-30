@@ -68,7 +68,7 @@ export function Section({
         {scene}
 
         {/* Text overlay, anchored to bottom of viewport */}
-        <div className="relative z-10 flex h-full items-end px-4 pb-28 sm:px-8 sm:pb-28 md:pb-32">
+        <div className="relative z-10 flex h-full items-end px-4 pb-32 sm:px-8 sm:pb-28 md:pb-32">
           <div className="mx-auto w-full max-w-5xl">
             <Heading label={label} title={title} copy={copy}>
               {children}

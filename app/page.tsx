@@ -7,6 +7,8 @@ import { SkillsEqualizer } from "@/components/SkillsEqualizer";
 import { SkillsBackdrop } from "@/components/SkillsBackdrop";
 import { RoleNav } from "@/components/RoleNav";
 import { AskAI } from "@/components/ai/AskAI";
+import { SoundNudge } from "@/components/audio/SoundNudge";
+import { LazyScene } from "@/components/scenes/LazyScene";
 import { HeroOrbSceneClient } from "@/components/scenes/HeroOrbSceneClient";
 import { WaveformSheetSceneClient } from "@/components/scenes/WaveformSheetSceneClient";
 import { ParticleBurstSceneClient } from "@/components/scenes/ParticleBurstSceneClient";
@@ -42,6 +44,7 @@ export default function Page() {
       <ScrollProgress />
       <RoleNav />
       <AudioSourcePicker />
+      <SoundNudge />
       <AskAI />
 
       <Section
@@ -51,7 +54,11 @@ export default function Page() {
         copy="Press the bottom-right corner. Pick something. Watch it react."
         tone="ink"
         heightVh={220}
-        scene={<HeroOrbSceneClient />}
+        scene={
+          <LazyScene poster="from-bass/25">
+            <HeroOrbSceneClient />
+          </LazyScene>
+        }
       />
 
       <Section
@@ -61,7 +68,11 @@ export default function Page() {
         copy="Full-stack systems, machine learning, the messy bits in between. The waveform is whatever you're playing."
         tone="ink"
         heightVh={200}
-        scene={<WaveformSheetSceneClient />}
+        scene={
+          <LazyScene poster="from-mid/20">
+            <WaveformSheetSceneClient />
+          </LazyScene>
+        }
       />
 
       <Section
@@ -71,7 +82,11 @@ export default function Page() {
         copy="The stack, on the EQ — each channel pulses to whatever you're playing."
         tone="ink"
         heightVh={200}
-        scene={<SkillsBackdrop />}
+        scene={
+          <LazyScene poster="from-highMid/15">
+            <SkillsBackdrop />
+          </LazyScene>
+        }
       >
         <SkillsEqualizer />
       </Section>
@@ -83,7 +98,11 @@ export default function Page() {
         copy={group["ml-projects"].copy}
         tone="ink"
         heightVh={220}
-        scene={<ParticleBurstSceneClient />}
+        scene={
+          <LazyScene poster="from-bass/20">
+            <ParticleBurstSceneClient />
+          </LazyScene>
+        }
       >
         <ProjectGrid id="ml-projects" />
       </Section>
@@ -95,7 +114,11 @@ export default function Page() {
         copy={group["infra-projects"].copy}
         tone="ink"
         heightVh={220}
-        scene={<WarpGridSceneClient />}
+        scene={
+          <LazyScene poster="from-ice/15">
+            <WarpGridSceneClient />
+          </LazyScene>
+        }
       >
         <ProjectGrid id="infra-projects" />
       </Section>
@@ -119,7 +142,11 @@ export default function Page() {
         copy=""
         tone="ink"
         heightVh={180}
-        scene={<OutroFadeSceneClient />}
+        scene={
+          <LazyScene poster="from-high/10">
+            <OutroFadeSceneClient />
+          </LazyScene>
+        }
       >
         <div className="grid gap-4 font-mono text-sm sm:grid-cols-2 md:grid-cols-4">
           {contactLinks.map((link) => (

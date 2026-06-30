@@ -65,7 +65,7 @@ export function GlitchTypeBackdrop({
           ref={(el) => {
             itemRefs.current[i] = el;
           }}
-          className="font-display text-7xl font-black uppercase leading-none tracking-tighter text-cream/40 md:text-9xl"
+          className="font-display text-5xl font-black uppercase leading-none tracking-tighter text-cream/40 sm:text-7xl md:text-9xl"
           style={{ willChange: "transform, opacity, text-shadow" }}
         >
           {token}
