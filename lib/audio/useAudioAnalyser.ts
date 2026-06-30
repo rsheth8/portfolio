@@ -51,7 +51,24 @@ export function useAudioAnalyser(): React.RefObject<AudioBands> {
     let raf = 0;
     const tick = () => {
       const { freq, time } = engine.pullFrame();
-      const bands = computeBands(freq);
+      let bands = computeBands(freq);
+
+      // Spotify SDK audio doesn't route through our analyser — synthesize a
+      // beat-synced pulse so visuals still feel alive during full playback.
+      if (engine.isExternalPlayback()) {
+        const t = performance.now() / 1000;
+        const beat = (Math.sin(t * Math.PI * 2 * (78 / 60)) + 1) / 2;
+        const hat = (Math.sin(t * Math.PI * 2 * (82 / 15)) + 1) / 2;
+        bands = {
+          bass: 0.25 + beat * 0.55,
+          lowMid: 0.2 + beat * 0.35,
+          mid: 0.18 + beat * 0.25,
+          highMid: 0.12 + hat * 0.3,
+          high: 0.1 + hat * 0.35,
+          energy: 0.2 + beat * 0.45,
+        };
+      }
+
       ref.current = {
         ...bands,
         freq,
