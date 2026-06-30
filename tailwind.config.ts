@@ -16,14 +16,16 @@ const config: Config = {
         ink: "#06060a",        // near-black background
         slate: "#0e0e16",       // section base
         graphite: "#1a1a26",    // raised surfaces
-        // Frequency accents:
-        bass: "#ff3a7a",        // hot magenta — bass kick
-        mid: "#00d6ff",         // cyan — midrange / structure
-        high: "#ffe66c",        // bright yellow — high-end sparkle
-        accent: "#b14dff",      // violet — secondary
+        // Frequency accents — driven by CSS vars so they can re-tint to the
+        // playing track's cover art (see lib/theme/palette.ts). Defaults live
+        // in globals.css :root as space-separated RGB channels.
+        bass: "rgb(var(--bass) / <alpha-value>)",    // hot magenta — bass kick
+        mid: "rgb(var(--mid) / <alpha-value>)",      // cyan — midrange / structure
+        high: "rgb(var(--high) / <alpha-value>)",    // bright yellow — high-end sparkle
+        accent: "rgb(var(--accent) / <alpha-value>)", // violet — secondary
         // Drake palette nods:
         gold: "#d4b06a",        // Take Care era cream-gold
-        ice: "#8aa8c8",         // Views era cold blue
+        ice: "rgb(var(--ice) / <alpha-value>)", // Views era cold blue (themeable)
         cream: "#ece2c6",       // soft warm text
         bone: "#d6cdb8",        // off-white text
         mute: "#6a6a78",        // dim gray

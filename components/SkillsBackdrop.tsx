@@ -2,23 +2,26 @@
 
 import { useEffect, useRef } from "react";
 import { useAudioAnalyser, type AudioBands } from "@/lib/audio/useAudioAnalyser";
+import { getPalette, rgbCss, type Palette } from "@/lib/theme/palette";
 
 // Soft color "stage lights" — one per EQ channel, in the same palette as the
 // meters — slowly orbiting behind the skills. Each glow breathes with its own
 // frequency band, so the background and the EQ pulse to the same music instead
-// of fighting each other.
+// of fighting each other. `pkey` ties the glow to a live palette channel so it
+// re-tints with the playing track's cover art.
 const GLOWS: {
   color: string;
+  pkey: keyof Palette;
   band: keyof AudioBands;
   top: string;
   left: string;
   size: number;
 }[] = [
-  { color: "#ff3a7a", band: "bass", top: "30%", left: "22%", size: 460 },
-  { color: "#b14dff", band: "mid", top: "62%", left: "38%", size: 400 },
-  { color: "#00d6ff", band: "lowMid", top: "26%", left: "58%", size: 500 },
-  { color: "#ffe66c", band: "highMid", top: "66%", left: "72%", size: 360 },
-  { color: "#8aa8c8", band: "high", top: "16%", left: "80%", size: 320 },
+  { color: "#ff3a7a", pkey: "bass", band: "bass", top: "30%", left: "22%", size: 460 },
+  { color: "#b14dff", pkey: "accent", band: "mid", top: "62%", left: "38%", size: 400 },
+  { color: "#00d6ff", pkey: "mid", band: "lowMid", top: "26%", left: "58%", size: 500 },
+  { color: "#ffe66c", pkey: "high", band: "highMid", top: "66%", left: "72%", size: 360 },
+  { color: "#8aa8c8", pkey: "ice", band: "high", top: "16%", left: "80%", size: 320 },
 ];
 
 /**
@@ -37,16 +40,27 @@ export function SkillsBackdrop() {
 
     const glows = Array.from(
       root.querySelectorAll<HTMLElement>("[data-glow]"),
-    ).map((el, i) => ({ el, band: el.dataset.band as keyof AudioBands, i }));
+    ).map((el, i) => ({
+      el,
+      band: el.dataset.band as keyof AudioBands,
+      pkey: el.dataset.pkey as keyof Palette,
+      i,
+    }));
 
+    const palette = getPalette();
     let raf = 0;
     const tick = (now: number) => {
+      const pal = palette.getCurrent();
       for (const g of glows) {
         const amp = (bands.current[g.band] as number) ?? 0;
         const idle = (Math.sin(now / 1500 + g.i * 1.7) * 0.5 + 0.5) * 0.08;
         const scale = 1 + idle + amp * 0.45;
         g.el.style.transform = `translate(-50%, -50%) scale(${scale})`;
         g.el.style.opacity = String(Math.min(0.55, 0.22 + idle + amp * 0.4));
+        // Re-tint to the live album palette.
+        g.el.style.background = `radial-gradient(circle, ${rgbCss(
+          pal[g.pkey],
+        )} 0%, transparent 70%)`;
       }
       raf = requestAnimationFrame(tick);
     };
@@ -63,6 +77,7 @@ export function SkillsBackdrop() {
             key={g.color}
             data-glow
             data-band={g.band}
+            data-pkey={g.pkey}
             className="absolute rounded-full blur-[60px] will-change-transform sm:blur-[80px]"
             style={{
               top: g.top,

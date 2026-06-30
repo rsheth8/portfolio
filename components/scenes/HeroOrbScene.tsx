@@ -5,6 +5,7 @@ import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useAudioAnalyser } from "@/lib/audio/useAudioAnalyser";
 import { useSectionProgress } from "@/lib/useSectionProgress";
+import { getPalette } from "@/lib/theme/palette";
 
 /**
  * Hero scene — single luminous orb pulsing to the bass, surrounded by a
@@ -34,6 +35,9 @@ export function HeroOrbScene() {
       uniforms: {
         uTime: { value: 0 },
         uPulse: { value: 0 },
+        // Peak colors — driven by the live album palette each frame.
+        uCorePeak: { value: new THREE.Color(1.0, 0.22, 0.48) },
+        uRimPeak: { value: new THREE.Color(1.0, 0.62, 0.78) },
       },
       transparent: false,
       vertexShader: /* glsl */ `
@@ -49,6 +53,8 @@ export function HeroOrbScene() {
       fragmentShader: /* glsl */ `
         uniform float uTime;
         uniform float uPulse;
+        uniform vec3 uCorePeak;
+        uniform vec3 uRimPeak;
         varying vec3 vNormalW;
         varying vec3 vViewDir;
 
@@ -61,9 +67,9 @@ export function HeroOrbScene() {
           vec3 coreCool = vec3(0.85, 0.62, 0.18);  // gold
           vec3 rimCool  = vec3(1.00, 0.88, 0.55);  // cream
 
-          // Peak palette: hot magenta everything.
-          vec3 corePeak = vec3(1.00, 0.22, 0.48);  // bass pink
-          vec3 rimPeak  = vec3(1.00, 0.62, 0.78);
+          // Peak palette: tinted to the playing track (album theme).
+          vec3 corePeak = uCorePeak;
+          vec3 rimPeak  = uRimPeak;
 
           vec3 core = mix(coreCool, corePeak, uPulse);
           vec3 rim_ = mix(rimCool, rimPeak, uPulse);
@@ -80,7 +86,10 @@ export function HeroOrbScene() {
   // bigger glow on peaks.
   const haloMaterial = useMemo(() => {
     return new THREE.ShaderMaterial({
-      uniforms: { uPulse: { value: 0 } },
+      uniforms: {
+        uPulse: { value: 0 },
+        uHot: { value: new THREE.Color(1.0, 0.22, 0.48) },
+      },
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
@@ -94,11 +103,12 @@ export function HeroOrbScene() {
       `,
       fragmentShader: /* glsl */ `
         uniform float uPulse;
+        uniform vec3 uHot;
         varying vec3 vNormalW;
         void main() {
           float rim = pow(1.0 - abs(dot(vNormalW, vec3(0.0, 0.0, 1.0))), 3.2);
           vec3 cool = vec3(0.85, 0.62, 0.18);
-          vec3 hot  = vec3(1.0, 0.22, 0.48);
+          vec3 hot  = uHot;
           vec3 col = mix(cool, hot, uPulse);
           gl_FragColor = vec4(col * rim * (0.8 + uPulse * 2.5), rim * (0.45 + uPulse * 0.55));
         }
@@ -130,6 +140,22 @@ export function HeroOrbScene() {
 
     orbMaterial.uniforms.uPulse.value = lerpGlow.current;
     haloMaterial.uniforms.uPulse.value = lerpGlow.current;
+
+    // Tint the orb's peak/halo to the live album palette. Direct channel
+    // assignment (0-1 from 0-255) keeps the raw values the shader expects.
+    const pal = getPalette().getCurrent();
+    const corePeak = orbMaterial.uniforms.uCorePeak.value as THREE.Color;
+    corePeak.r = pal.bass[0] / 255;
+    corePeak.g = pal.bass[1] / 255;
+    corePeak.b = pal.bass[2] / 255;
+    const rimPeak = orbMaterial.uniforms.uRimPeak.value as THREE.Color;
+    rimPeak.r = pal.accent[0] / 255;
+    rimPeak.g = pal.accent[1] / 255;
+    rimPeak.b = pal.accent[2] / 255;
+    const hot = haloMaterial.uniforms.uHot.value as THREE.Color;
+    hot.r = pal.bass[0] / 255;
+    hot.g = pal.bass[1] / 255;
+    hot.b = pal.bass[2] / 255;
 
     // Scroll-driven camera dolly: gentle pull-back across the section.
     const distance = THREE.MathUtils.lerp(3.5, 5.0, t);
@@ -195,6 +221,8 @@ function Waveform() {
   useFrame(() => {
     const time = bands.current.time;
     if (!time.length || !lineRef.current) return;
+    const ice = getPalette().getCurrent().ice;
+    material.color.setRGB(ice[0] / 255, ice[1] / 255, ice[2] / 255);
     const positions = geometry.attributes.position.array as Float32Array;
     const stride = Math.max(1, Math.floor(time.length / SAMPLES));
     for (let i = 0; i < SAMPLES; i++) {

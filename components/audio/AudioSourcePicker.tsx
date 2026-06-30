@@ -8,6 +8,7 @@ import {
   onCornerPanelOpen,
 } from "@/lib/ui/cornerPanels";
 import { MusicSearch } from "@/components/audio/MusicSearch";
+import { resetTheme } from "@/lib/theme/extractColors";
 
 /**
  * Bottom-right corner audio control.
@@ -82,6 +83,7 @@ export function AudioSourcePicker() {
     if (!file) return;
     setSelectedFile(file.name);
     setLoading(true);
+    resetTheme(); // uploads have no cover art — revert to brand palette
     try {
       await engine.playFile(file);
     } catch (err) {
@@ -97,6 +99,7 @@ export function AudioSourcePicker() {
   async function handleDemo() {
     setError(null);
     setLoading(true);
+    resetTheme();
     try {
       await engine.playDemo();
       setSelectedFile(null);
@@ -110,6 +113,7 @@ export function AudioSourcePicker() {
   async function handleMic() {
     setError(null);
     setLoading(true);
+    resetTheme();
     try {
       await engine.useMic();
       setSelectedFile(null);
@@ -125,6 +129,7 @@ export function AudioSourcePicker() {
     setError(null);
     if (!url.trim()) return;
     setLoading(true);
+    resetTheme();
     try {
       await engine.playUrl(url.trim());
     } catch (err) {
@@ -283,6 +288,7 @@ export function AudioSourcePicker() {
                   onClick={() => {
                     engine.stop();
                     engine.stopExternalPlayback();
+                    resetTheme();
                     setSelectedFile(null);
                   }}
                   className="min-h-[44px] px-2 text-[10px] uppercase tracking-wider text-mute hover:text-cream sm:min-h-0"

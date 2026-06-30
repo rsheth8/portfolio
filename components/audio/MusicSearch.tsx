@@ -13,6 +13,7 @@ import {
   type ParsedMusicLink,
 } from "@/lib/streaming/parseMusicUrl";
 import { fetchSpotifyOEmbed } from "@/lib/streaming/spotifyOEmbed";
+import { themeFromArtwork } from "@/lib/theme/extractColors";
 import { SpotifyPicker } from "@/components/audio/SpotifyPicker";
 import {
   isSpotifyConfigured,
@@ -112,6 +113,8 @@ export function MusicSearch({ onError, onLoading }: MusicSearchProps) {
         track.previewUrl,
         `${track.trackName} — ${track.artistName}`,
       );
+      // Re-tint the site to this track's cover art.
+      void themeFromArtwork(track.artworkUrl100);
     } catch (err) {
       onError(formatErr(err));
     } finally {
@@ -145,6 +148,7 @@ export function MusicSearch({ onError, onLoading }: MusicSearchProps) {
               preview.previewUrl,
               `${preview.trackName} — ${preview.artistName}`,
             );
+            void themeFromArtwork(oembed.thumbnail_url);
             onError(null);
           } else if (spotifyConnected) {
             getAudioEngine().stopExternalPlayback();
@@ -173,6 +177,7 @@ export function MusicSearch({ onError, onLoading }: MusicSearchProps) {
             tracks[0].previewUrl,
             `${tracks[0].trackName} — ${tracks[0].artistName}`,
           );
+          void themeFromArtwork(tracks[0].artworkUrl100);
         } else {
           onError("Could not find a preview — open in Apple Music to listen.");
         }

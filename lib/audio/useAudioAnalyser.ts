@@ -89,7 +89,7 @@ export function useAudioAnalyser(): React.RefObject<AudioBands> {
 /** Convert raw 0-255 FFT bins to normalized band averages. The bin index
  * maps to frequency as: freq = binIndex * (sampleRate / fftSize).
  * For a 48 kHz sample rate and fftSize=1024, each bin = 46.875 Hz. */
-function computeBands(freq: Uint8Array): Omit<AudioBands, "freq" | "time"> {
+export function computeBands(freq: Uint8Array): Omit<AudioBands, "freq" | "time"> {
   // Approximate bin ranges for the perceptual bands defined above.
   // Assumes 48 kHz sample rate / 1024 fft → 46.875 Hz per bin.
   const ranges: [number, number][] = [

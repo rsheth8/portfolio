@@ -8,6 +8,12 @@ import { SkillsBackdrop } from "@/components/SkillsBackdrop";
 import { RoleNav } from "@/components/RoleNav";
 import { AskAI } from "@/components/ai/AskAI";
 import { SoundNudge } from "@/components/audio/SoundNudge";
+import { DropFlash } from "@/components/audio/DropFlash";
+import { FFTHud } from "@/components/audio/FFTHud";
+import { BeatHaptics } from "@/components/audio/BeatHaptics";
+import { GuidedTour } from "@/components/GuidedTour";
+import { KeyboardControls } from "@/components/KeyboardControls";
+import { ThemeController } from "@/components/theme/ThemeController";
 import { LazyScene } from "@/components/scenes/LazyScene";
 import { HeroOrbSceneClient } from "@/components/scenes/HeroOrbSceneClient";
 import { WaveformSheetSceneClient } from "@/components/scenes/WaveformSheetSceneClient";
@@ -41,8 +47,14 @@ const contactLinks = [
 export default function Page() {
   return (
     <main className="relative">
+      <ThemeController />
+      <DropFlash />
       <ScrollProgress />
       <RoleNav />
+      <GuidedTour />
+      <FFTHud />
+      <KeyboardControls />
+      <BeatHaptics />
       <AudioSourcePicker />
       <SoundNudge />
       <AskAI />
