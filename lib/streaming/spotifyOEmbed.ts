@@ -1,5 +1,7 @@
 /** Spotify oEmbed — public, no auth. Returns track/playlist title + thumbnail. */
 
+import { timeoutSignal } from "./timeoutSignal";
+
 export interface SpotifyOEmbed {
   title: string;
   thumbnail_url: string;
@@ -13,7 +15,7 @@ export async function fetchSpotifyOEmbed(
     const params = new URLSearchParams({ url: spotifyUrl });
     const res = await fetch(
       `https://open.spotify.com/oembed?${params}`,
-      { signal: AbortSignal.timeout(6000) },
+      { signal: timeoutSignal(6000) },
     );
     if (!res.ok) return null;
     return (await res.json()) as SpotifyOEmbed;

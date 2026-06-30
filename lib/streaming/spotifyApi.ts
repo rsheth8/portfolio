@@ -1,4 +1,5 @@
 import { getStoredToken } from "./spotifyPlayer";
+import { timeoutSignal } from "./timeoutSignal";
 
 export interface SpotifyTrack {
   id: string;
@@ -23,7 +24,7 @@ async function spotifyFetch<T>(path: string): Promise<T> {
 
   const res = await fetch(`https://api.spotify.com/v1${path}`, {
     headers: { Authorization: `Bearer ${token}` },
-    signal: AbortSignal.timeout(10000),
+    signal: timeoutSignal(10000),
   });
 
   if (res.status === 401) {

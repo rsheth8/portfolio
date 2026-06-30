@@ -1,4 +1,5 @@
 import { getStoredToken } from "./spotifyPlayer";
+import { timeoutSignal } from "./timeoutSignal";
 
 /** Spotify Audio Analysis — beat/segment timing for visual sync. */
 export interface SpotifyAnalysis {
@@ -50,7 +51,7 @@ async function spotifyFetch<T>(path: string): Promise<T> {
 
   const res = await fetch(`https://api.spotify.com/v1${path}`, {
     headers: { Authorization: `Bearer ${token}` },
-    signal: AbortSignal.timeout(12000),
+    signal: timeoutSignal(12000),
   });
 
   if (res.status === 401) throw new Error("Spotify session expired — reconnect.");

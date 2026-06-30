@@ -1,5 +1,7 @@
 /** iTunes Search API — no auth, CORS-friendly, returns 30s preview MP3s. */
 
+import { timeoutSignal } from "./timeoutSignal";
+
 export interface iTunesTrack {
   trackId: number;
   trackName: string;
@@ -22,7 +24,7 @@ export async function searchiTunes(
   });
   const res = await fetch(
     `https://itunes.apple.com/search?${params}`,
-    { signal: AbortSignal.timeout(8000) },
+    { signal: timeoutSignal(8000) },
   );
   if (!res.ok) throw new Error("Music search failed — try again.");
   const data = (await res.json()) as { results?: iTunesTrack[] };
