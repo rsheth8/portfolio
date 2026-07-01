@@ -9,6 +9,7 @@ import {
 } from "@/lib/ui/cornerPanels";
 import { MusicSearch } from "@/components/audio/MusicSearch";
 import { togglePlayback } from "@/lib/audio/togglePlayback";
+import type { DemoStyle } from "@/lib/audio/demoStyles";
 import { resetTheme } from "@/lib/theme/extractColors";
 
 /**
@@ -97,12 +98,12 @@ export function AudioSourcePicker() {
     }
   }
 
-  async function handleDemo() {
+  async function handleDemo(style: DemoStyle) {
     setError(null);
     setLoading(true);
     resetTheme();
     try {
-      await engine.playDemo();
+      await engine.playDemo(style);
       setSelectedFile(null);
     } catch (err) {
       setError(formatError(err));
@@ -181,13 +182,24 @@ export function AudioSourcePicker() {
           </div>
 
           <button
-            onClick={handleDemo}
+            onClick={() => handleDemo("edm")}
             disabled={loading}
             className="mb-2 w-full min-h-[44px] rounded-lg border border-accent/40 bg-accent/10 px-3 py-2.5 text-left transition-colors hover:border-accent/70 hover:bg-accent/15 disabled:opacity-50"
           >
-            <div className="text-accent">▸ Play Bollywood beat</div>
+            <div className="text-accent">▸ Play EDM drop</div>
             <div className="mt-0.5 text-[10px] text-mute">
-              Tabla, sitar & strings — lights up every visual
+              Festival build & bass drop — the full light show
+            </div>
+          </button>
+
+          <button
+            onClick={() => handleDemo("synthwave")}
+            disabled={loading}
+            className="mb-2 w-full min-h-[44px] rounded-lg border border-accent/40 bg-accent/10 px-3 py-2.5 text-left transition-colors hover:border-accent/70 hover:bg-accent/15 disabled:opacity-50"
+          >
+            <div className="text-accent">▸ Play synthwave</div>
+            <div className="mt-0.5 text-[10px] text-mute">
+              Retro arps & driving bass — neon energy
             </div>
           </button>
 

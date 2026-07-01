@@ -14,7 +14,12 @@
  *  - MediaStreamSource (mic) needs explicit getUserMedia() permission
  */
 
-import { DEMO_TRACK_NAME } from "./demoConfig";
+import {
+  buildDemo,
+  DEMO_STYLES,
+  DEFAULT_DEMO_STYLE,
+  type DemoStyle,
+} from "./demoStyles";
 
 export type SourceKind = "none" | "file" | "mic" | "url" | "demo" | "spotify";
 
@@ -44,6 +49,7 @@ class AudioEngineSingleton {
   private demoOscillators: OscillatorNode[] = [];
   private demoTimer: number | null = null;
   private noiseBuffer: AudioBuffer | null = null;
+  private demoStyle: DemoStyle = DEFAULT_DEMO_STYLE;
   private iosUnlocked = false;
 
   private freqData: Uint8Array = new Uint8Array(0);
@@ -268,12 +274,14 @@ class AudioEngineSingleton {
   }
 
   /**
-   * Play a synthesized classic Bollywood groove — tabla, tanpura, sitar, strings.
-   * Tuned so every analyser band (bass → high) drives the visuals at full scale.
+   * Play a synthesized demo beat (EDM festival drop or synthwave). Voices are
+   * generated live in lib/audio/demoStyles and routed through the shared
+   * analyser so every scene lights up. resume() replays the same style.
    */
-  async playDemo(): Promise<void> {
+  async playDemo(style: DemoStyle = DEFAULT_DEMO_STYLE): Promise<void> {
     const ctx = await this.ensureContext();
     this.teardownSource();
+    this.demoStyle = style;
 
     const mix = ctx.createGain();
     mix.gain.value = 0.9;
@@ -287,223 +295,15 @@ class AudioEngineSingleton {
       for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
       this.noiseBuffer = buf;
     }
-    const noise = this.noiseBuffer;
 
-    const tempo = 96;
-    const sixteenth = 60 / tempo / 4;
-    const stepsPerBar = 16;
-    // Raga Bhairavi in C over a fixed Sa drone (Sa, komal re, komal ga, Ma, Pa,
-    // komal dha, komal ni). The flat 2nd/3rd plus the meend glides in sitarPluck
-    // are what read as classical Indian rather than a Western scale.
-    const melody = [
-      261.63, 277.18, 311.13, 349.23, // Sa  re  ga  Ma
-      392.0, 349.23, 311.13, 277.18, //  Pa  Ma  ga  re
-      311.13, 349.23, 392.0, 415.3, //   ga  Ma  Pa  dha
-      392.0, 349.23, 311.13, 261.63, //  Pa  Ma  ga  Sa
-    ];
-    // Hold the tonal centre on Sa; the one Pa visit is modal, not a key change.
-    const roots = [130.81, 130.81, 196.0, 130.81];
-
-    const dholKick = (t: number) => {
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = "sine";
-      o.frequency.setValueAtTime(110, t);
-      o.frequency.exponentialRampToValueAtTime(48, t + 0.22);
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.72, t + 0.006);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.42);
-      o.connect(g);
-      g.connect(mix);
-      o.start(t);
-      o.stop(t + 0.45);
-      o.onended = () => {
-        o.disconnect();
-        g.disconnect();
-      };
-    };
-
-    const tablaNa = (t: number, amp: number) => {
-      const src = ctx.createBufferSource();
-      const bp = ctx.createBiquadFilter();
-      const g = ctx.createGain();
-      src.buffer = noise;
-      bp.type = "bandpass";
-      bp.frequency.value = 3200;
-      bp.Q.value = 1.4;
-      g.gain.setValueAtTime(amp, t);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.055);
-      src.connect(bp);
-      bp.connect(g);
-      g.connect(mix);
-      src.start(t);
-      src.stop(t + 0.06);
-      src.onended = () => {
-        src.disconnect();
-        bp.disconnect();
-        g.disconnect();
-      };
-    };
-
-    const manjeera = (t: number, amp: number) => {
-      const src = ctx.createBufferSource();
-      const hp = ctx.createBiquadFilter();
-      const g = ctx.createGain();
-      src.buffer = noise;
-      hp.type = "highpass";
-      hp.frequency.value = 6200;
-      g.gain.setValueAtTime(amp, t);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
-      src.connect(hp);
-      hp.connect(g);
-      g.connect(mix);
-      src.start(t);
-      src.stop(t + 0.045);
-      src.onended = () => {
-        src.disconnect();
-        hp.disconnect();
-        g.disconnect();
-      };
-    };
-
-    const sitarPluck = (
-      t: number,
-      freq: number,
-      amp: number,
-      from?: number,
-    ) => {
-      // Meend: slide in from the previous note (that characteristic sitar bend).
-      const startF = from ?? freq;
-      const bp = ctx.createBiquadFilter();
-      const g = ctx.createGain();
-      bp.type = "bandpass";
-      bp.frequency.setValueAtTime(startF, t);
-      bp.frequency.exponentialRampToValueAtTime(freq, t + 0.09);
-      bp.Q.value = 18;
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(amp, t + 0.004);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
-      bp.connect(g);
-      g.connect(mix);
-      const src = ctx.createBufferSource();
-      src.buffer = noise;
-      src.connect(bp);
-      src.start(t);
-      src.stop(t + 0.6);
-      const o = ctx.createOscillator();
-      o.type = "triangle";
-      o.frequency.setValueAtTime(startF, t);
-      o.frequency.exponentialRampToValueAtTime(freq, t + 0.09);
-      const og = ctx.createGain();
-      og.gain.setValueAtTime(0.0001, t);
-      og.gain.exponentialRampToValueAtTime(amp * 0.35, t + 0.01);
-      og.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
-      o.connect(og);
-      og.connect(mix);
-      o.start(t);
-      o.stop(t + 0.55);
-      src.onended = () => {
-        src.disconnect();
-        bp.disconnect();
-        g.disconnect();
-        o.disconnect();
-        og.disconnect();
-      };
-    };
-
-    const stringPad = (t: number, root: number, dur: number, amp: number) => {
-      const g = ctx.createGain();
-      const lp = ctx.createBiquadFilter();
-      lp.type = "lowpass";
-      lp.frequency.value = 2200;
-      lp.Q.value = 0.5;
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(amp, t + 0.08);
-      g.gain.setValueAtTime(amp * 0.85, t + dur * 0.4);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      lp.connect(g);
-      g.connect(mix);
-      // Open fifths (Sa–Pa–Sa) — no third, so it stays modal like a drone
-      // rather than pulling the ear toward a Western major/minor chord.
-      const chord = [0, 7, 12];
-      const oscs = chord.map((n) => {
-        const o = ctx.createOscillator();
-        o.type = "sawtooth";
-        o.frequency.value = root * Math.pow(2, n / 12);
-        o.connect(lp);
-        o.start(t);
-        o.stop(t + dur + 0.05);
-        return o;
-      });
-      oscs[oscs.length - 1].onended = () => {
-        oscs.forEach((o) => o.disconnect());
-        lp.disconnect();
-        g.disconnect();
-      };
-    };
-
-    const startTanpura = () => {
-      for (const freq of [130.81, 196.0]) {
-        const o = ctx.createOscillator();
-        const lp = ctx.createBiquadFilter();
-        const g = ctx.createGain();
-        o.type = "sawtooth";
-        o.frequency.value = freq;
-        lp.type = "lowpass";
-        lp.frequency.value = 520;
-        g.gain.value = freq === 130.81 ? 0.07 : 0.045;
-        o.connect(lp);
-        lp.connect(g);
-        g.connect(mix);
-        o.start();
-        this.demoOscillators.push(o);
-        this.demoNodes.push(lp, g);
-      }
-    };
-
-    startTanpura();
-
-    const beat = sixteenth * 4;
-    let prevSitar = melody[0]; // for the meend slide between successive notes
-    const scheduleStep = (step: number, t: number) => {
-      const bar = Math.floor(step / stepsPerBar);
-      const inBar = step % stepsPerBar;
-      const root = roots[bar % roots.length];
-      // Alternate sparse / full bars so drop detection fires on surges.
-      const fullEnsemble = bar % 2 === 0;
-
-      // Filmi keherwa-style 4/4: dhol on 1 & 3, tabla on offbeats, manjeera 8ths.
-      if (inBar === 0 || inBar === 8) dholKick(t);
-      if (inBar === 4 || inBar === 12) tablaNa(t, fullEnsemble ? 0.28 : 0.18);
-      if (inBar === 2 || inBar === 6 || inBar === 10 || inBar === 14) {
-        tablaNa(t, 0.12);
-      }
-      if (inBar % 2 === 1) {
-        manjeera(t, fullEnsemble ? 0.07 : 0.04);
-      }
-
-      if (inBar === 0) {
-        stringPad(t, root, beat * 4, fullEnsemble ? 0.14 : 0.06);
-      }
-
-      if (inBar % 4 === 0) {
-        const note = melody[(bar * 4 + inBar / 4) % melody.length];
-        sitarPluck(t, note, fullEnsemble ? 0.22 : 0.1, prevSitar);
-        prevSitar = note;
-      }
-
-      // Shehnai-like lead on bar downbeats — an octave up (stays in raga) for
-      // high-mid sparkle on the EQ top.
-      if (fullEnsemble && inBar === 0) {
-        sitarPluck(t, melody[(bar + 3) % melody.length] * 2, 0.14);
-      }
-    };
+    const build = buildDemo(style, ctx, mix, this.noiseBuffer);
+    const sixteenth = 60 / build.tempo / 4;
 
     let step = 0;
     let nextTime = ctx.currentTime + 0.1;
     const scheduler = () => {
       while (nextTime < ctx.currentTime + 0.2) {
-        scheduleStep(step, nextTime);
+        build.scheduleStep(step, nextTime);
         nextTime += sixteenth;
         step++;
       }
@@ -511,7 +311,11 @@ class AudioEngineSingleton {
     scheduler();
     this.demoTimer = window.setInterval(scheduler, 50);
 
-    this.setState({ kind: "demo", trackName: DEMO_TRACK_NAME, isPlaying: true });
+    this.setState({
+      kind: "demo",
+      trackName: DEMO_STYLES[style].name,
+      isPlaying: true,
+    });
   }
 
   /** Capture the microphone and route it through the analyser only — NOT
@@ -589,7 +393,7 @@ class AudioEngineSingleton {
     if (this.state.kind === "demo") {
       // Rebuild the generative beat (it's a loop, so there's no position to
       // restore). playDemo re-creates the scheduler and sets isPlaying.
-      await this.playDemo();
+      await this.playDemo(this.demoStyle);
       return;
     }
     if (this.state.kind === "mic") {

@@ -86,7 +86,7 @@ export function SoundNudge() {
             onClick={playSample}
             className="w-full rounded-lg border border-accent/40 bg-accent/15 px-3 py-2.5 text-center uppercase tracking-wider text-accent transition-colors hover:bg-accent/25"
           >
-            ▶ Play Bollywood beat
+            ▶ Play a beat
           </button>
           {/* Pointer toward the audio pill below. */}
           <div className="absolute -bottom-1.5 right-7 h-3 w-3 rotate-45 border-b border-r border-accent/30 bg-graphite/95" />
