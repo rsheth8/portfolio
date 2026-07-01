@@ -185,9 +185,9 @@ export function AudioSourcePicker() {
             disabled={loading}
             className="mb-2 w-full min-h-[44px] rounded-lg border border-accent/40 bg-accent/10 px-3 py-2.5 text-left transition-colors hover:border-accent/70 hover:bg-accent/15 disabled:opacity-50"
           >
-            <div className="text-accent">▸ Play chill beat</div>
+            <div className="text-accent">▸ Play Bollywood beat</div>
             <div className="mt-0.5 text-[10px] text-mute">
-              Downtempo groove — instant, nothing to upload
+              Tabla, sitar & strings — lights up every visual
             </div>
           </button>
 

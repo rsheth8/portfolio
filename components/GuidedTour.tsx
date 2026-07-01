@@ -32,7 +32,7 @@ type LenisLike = {
 };
 
 /**
- * One-tap guided tour: starts the chill beat so the visuals react, then
+ * One-tap guided tour: starts the Bollywood beat so the visuals react, then
  * auto-scrolls through every section on a timer — a ~22s showcase for visitors
  * who won't explore on their own. Tap again (or it finishes) to stop.
  */

@@ -14,6 +14,8 @@
  *  - MediaStreamSource (mic) needs explicit getUserMedia() permission
  */
 
+import { DEMO_TRACK_NAME } from "./demoConfig";
+
 export type SourceKind = "none" | "file" | "mic" | "url" | "demo" | "spotify";
 
 export interface AudioState {
@@ -36,9 +38,10 @@ class AudioEngineSingleton {
   private externalPlayback = false;
 
   // Generative demo track — persistent mix bus + lookahead scheduler timer,
-  // plus a reusable white-noise buffer for hats. Lets the visuals come alive
-  // on first visit with zero assets and no copyright risk (it's synthesized).
+  // plus a reusable white-noise buffer for percussion. Lets the visuals come
+  // alive on first visit with zero assets and no copyright risk (synthesized).
   private demoNodes: AudioNode[] = [];
+  private demoOscillators: OscillatorNode[] = [];
   private demoTimer: number | null = null;
   private noiseBuffer: AudioBuffer | null = null;
   private iosUnlocked = false;
@@ -132,6 +135,16 @@ class AudioEngineSingleton {
     if (this.demoTimer !== null) {
       clearInterval(this.demoTimer);
       this.demoTimer = null;
+    }
+    if (this.demoOscillators.length) {
+      this.demoOscillators.forEach((o) => {
+        try {
+          o.stop();
+        } catch {
+          // already stopped
+        }
+      });
+      this.demoOscillators = [];
     }
     if (this.demoNodes.length) {
       this.demoNodes.forEach((n) => {
@@ -255,15 +268,15 @@ class AudioEngineSingleton {
   }
 
   /**
-   * Play a synthesized chill beat — downtempo groove, no file or licensing.
-   * Routed through the shared analyser so every scene lights up across bands.
+   * Play a synthesized classic Bollywood groove — tabla, tanpura, sitar, strings.
+   * Tuned so every analyser band (bass → high) drives the visuals at full scale.
    */
   async playDemo(): Promise<void> {
     const ctx = await this.ensureContext();
     this.teardownSource();
 
     const mix = ctx.createGain();
-    mix.gain.value = 0.88;
+    mix.gain.value = 0.9;
     mix.connect(this.gain!);
     this.demoNodes.push(mix);
 
@@ -276,52 +289,47 @@ class AudioEngineSingleton {
     }
     const noise = this.noiseBuffer;
 
-    const tempo = 78;
+    const tempo = 96;
     const sixteenth = 60 / tempo / 4;
     const stepsPerBar = 16;
-    // Dm9 · Bbmaj7 · Fmaj7 · Cmaj7 — warm, open voicings
-    const prog: { root: number; chord: number[] }[] = [
-      { root: 73.42, chord: [0, 3, 7, 10] },
-      { root: 58.27, chord: [0, 4, 7, 11] },
-      { root: 87.31, chord: [0, 4, 7, 11] },
-      { root: 65.41, chord: [0, 4, 7, 11] },
-    ];
-    const semi = (f: number, n: number) => f * Math.pow(2, n / 12);
+    // C major pentatonic + F — classic upbeat filmy phrase shapes
+    const melody = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 440.0, 392.0];
+    const roots = [130.81, 98.0, 110.0, 98.0]; // Sa / Pa drone roots per bar
 
-    const softKick = (t: number) => {
+    const dholKick = (t: number) => {
       const o = ctx.createOscillator();
       const g = ctx.createGain();
       o.type = "sine";
-      o.frequency.setValueAtTime(90, t);
-      o.frequency.exponentialRampToValueAtTime(42, t + 0.18);
+      o.frequency.setValueAtTime(110, t);
+      o.frequency.exponentialRampToValueAtTime(48, t + 0.22);
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.55, t + 0.008);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+      g.gain.exponentialRampToValueAtTime(0.72, t + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.42);
       o.connect(g);
       g.connect(mix);
       o.start(t);
-      o.stop(t + 0.38);
+      o.stop(t + 0.45);
       o.onended = () => {
         o.disconnect();
         g.disconnect();
       };
     };
 
-    const rim = (t: number) => {
+    const tablaNa = (t: number, amp: number) => {
       const src = ctx.createBufferSource();
       const bp = ctx.createBiquadFilter();
       const g = ctx.createGain();
       src.buffer = noise;
       bp.type = "bandpass";
-      bp.frequency.value = 2800;
-      bp.Q.value = 1.2;
-      g.gain.setValueAtTime(0.22, t);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
+      bp.frequency.value = 3200;
+      bp.Q.value = 1.4;
+      g.gain.setValueAtTime(amp, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.055);
       src.connect(bp);
       bp.connect(g);
       g.connect(mix);
       src.start(t);
-      src.stop(t + 0.05);
+      src.stop(t + 0.06);
       src.onended = () => {
         src.disconnect();
         bp.disconnect();
@@ -329,45 +337,83 @@ class AudioEngineSingleton {
       };
     };
 
-    const subBass = (t: number, root: number, dur: number) => {
-      const o = ctx.createOscillator();
+    const manjeera = (t: number, amp: number) => {
+      const src = ctx.createBufferSource();
+      const hp = ctx.createBiquadFilter();
       const g = ctx.createGain();
-      o.type = "sine";
-      o.frequency.value = root;
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.38, t + 0.06);
-      g.gain.setValueAtTime(0.32, t + dur * 0.7);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      o.connect(g);
+      src.buffer = noise;
+      hp.type = "highpass";
+      hp.frequency.value = 6200;
+      g.gain.setValueAtTime(amp, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
+      src.connect(hp);
+      hp.connect(g);
       g.connect(mix);
-      o.start(t);
-      o.stop(t + dur + 0.05);
-      o.onended = () => {
-        o.disconnect();
+      src.start(t);
+      src.stop(t + 0.045);
+      src.onended = () => {
+        src.disconnect();
+        hp.disconnect();
         g.disconnect();
       };
     };
 
-    const rhodes = (t: number, root: number, chord: number[], dur: number) => {
+    const sitarPluck = (t: number, freq: number, amp: number) => {
+      const bp = ctx.createBiquadFilter();
+      const g = ctx.createGain();
+      bp.type = "bandpass";
+      bp.frequency.value = freq;
+      bp.Q.value = 18;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(amp, t + 0.004);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+      bp.connect(g);
+      g.connect(mix);
+      const src = ctx.createBufferSource();
+      src.buffer = noise;
+      src.connect(bp);
+      src.start(t);
+      src.stop(t + 0.6);
+      const o = ctx.createOscillator();
+      o.type = "triangle";
+      o.frequency.value = freq;
+      const og = ctx.createGain();
+      og.gain.setValueAtTime(0.0001, t);
+      og.gain.exponentialRampToValueAtTime(amp * 0.35, t + 0.01);
+      og.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+      o.connect(og);
+      og.connect(mix);
+      o.start(t);
+      o.stop(t + 0.55);
+      src.onended = () => {
+        src.disconnect();
+        bp.disconnect();
+        g.disconnect();
+        o.disconnect();
+        og.disconnect();
+      };
+    };
+
+    const stringPad = (t: number, root: number, dur: number, amp: number) => {
       const g = ctx.createGain();
       const lp = ctx.createBiquadFilter();
       lp.type = "lowpass";
-      lp.frequency.value = 1800;
-      lp.Q.value = 0.6;
+      lp.frequency.value = 2200;
+      lp.Q.value = 0.5;
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.11, t + 0.12);
-      g.gain.setValueAtTime(0.09, t + dur * 0.5);
+      g.gain.exponentialRampToValueAtTime(amp, t + 0.08);
+      g.gain.setValueAtTime(amp * 0.85, t + dur * 0.4);
       g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
       lp.connect(g);
       g.connect(mix);
-      const oscs = chord.map((n, i) => {
+      const chord = [0, 4, 7];
+      const oscs = chord.map((n) => {
         const o = ctx.createOscillator();
-        o.type = "triangle";
-        o.frequency.value = semi(root * 2, n);
-        o.detune.value = (i - 1.5) * 5;
+        o.type = "sawtooth";
+        o.frequency.value = root * Math.pow(2, n / 12);
         o.connect(lp);
         o.start(t);
-        o.stop(t + dur + 0.1);
+        o.stop(t + dur + 0.05);
         return o;
       });
       oscs[oscs.length - 1].onended = () => {
@@ -377,44 +423,58 @@ class AudioEngineSingleton {
       };
     };
 
-    const shaker = (t: number, amp: number) => {
-      const src = ctx.createBufferSource();
-      const hp = ctx.createBiquadFilter();
-      const g = ctx.createGain();
-      src.buffer = noise;
-      hp.type = "highpass";
-      hp.frequency.value = 5000;
-      g.gain.setValueAtTime(amp, t);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.035);
-      src.connect(hp);
-      hp.connect(g);
-      g.connect(mix);
-      src.start(t);
-      src.stop(t + 0.04);
-      src.onended = () => {
-        src.disconnect();
-        hp.disconnect();
-        g.disconnect();
-      };
+    const startTanpura = () => {
+      for (const freq of [130.81, 196.0]) {
+        const o = ctx.createOscillator();
+        const lp = ctx.createBiquadFilter();
+        const g = ctx.createGain();
+        o.type = "sawtooth";
+        o.frequency.value = freq;
+        lp.type = "lowpass";
+        lp.frequency.value = 520;
+        g.gain.value = freq === 130.81 ? 0.07 : 0.045;
+        o.connect(lp);
+        lp.connect(g);
+        g.connect(mix);
+        o.start();
+        this.demoOscillators.push(o);
+        this.demoNodes.push(lp, g);
+      }
     };
+
+    startTanpura();
 
     const beat = sixteenth * 4;
     const scheduleStep = (step: number, t: number) => {
-      const bar = Math.floor(step / stepsPerBar) % prog.length;
+      const bar = Math.floor(step / stepsPerBar);
       const inBar = step % stepsPerBar;
-      const { root, chord } = prog[bar];
+      const root = roots[bar % roots.length];
+      // Alternate sparse / full bars so drop detection fires on surges.
+      const fullEnsemble = bar % 2 === 0;
 
-      // Laid-back boom-bap: kick on 1 & 9, rim on 5 & 13
-      if (inBar === 0 || inBar === 8) softKick(t);
-      if (inBar === 4 || inBar === 12) rim(t);
-
-      if (inBar === 0) {
-        subBass(t, root, beat * 3.5);
-        rhodes(t, root, chord, beat * 4);
+      // Filmi keherwa-style 4/4: dhol on 1 & 3, tabla on offbeats, manjeera 8ths.
+      if (inBar === 0 || inBar === 8) dholKick(t);
+      if (inBar === 4 || inBar === 12) tablaNa(t, fullEnsemble ? 0.28 : 0.18);
+      if (inBar === 2 || inBar === 6 || inBar === 10 || inBar === 14) {
+        tablaNa(t, 0.12);
+      }
+      if (inBar % 2 === 1) {
+        manjeera(t, fullEnsemble ? 0.07 : 0.04);
       }
 
-      // Sparse shaker — offbeats and ghosts
-      if (inBar % 2 === 1) shaker(t, inBar === 7 || inBar === 15 ? 0.05 : 0.03);
+      if (inBar === 0) {
+        stringPad(t, root, beat * 4, fullEnsemble ? 0.14 : 0.06);
+      }
+
+      if (inBar % 4 === 0) {
+        const note = melody[(bar * 4 + inBar / 4) % melody.length];
+        sitarPluck(t, note, fullEnsemble ? 0.22 : 0.1);
+      }
+
+      // Shehnai-like lead on bar downbeats — high-mid sparkle for the EQ top.
+      if (fullEnsemble && inBar === 0) {
+        sitarPluck(t, melody[(bar + 3) % melody.length] * 1.5, 0.14);
+      }
     };
 
     let step = 0;
@@ -429,7 +489,7 @@ class AudioEngineSingleton {
     scheduler();
     this.demoTimer = window.setInterval(scheduler, 50);
 
-    this.setState({ kind: "demo", trackName: "Chill beat", isPlaying: true });
+    this.setState({ kind: "demo", trackName: DEMO_TRACK_NAME, isPlaying: true });
   }
 
   /** Capture the microphone and route it through the analyser only — NOT
@@ -466,6 +526,14 @@ class AudioEngineSingleton {
         clearInterval(this.demoTimer);
         this.demoTimer = null;
       }
+      this.demoOscillators.forEach((o) => {
+        try {
+          o.stop();
+        } catch {
+          // already stopped
+        }
+      });
+      this.demoOscillators = [];
       this.demoNodes.forEach((n) => {
         try {
           n.disconnect();
