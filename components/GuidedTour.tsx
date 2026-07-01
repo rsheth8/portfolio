@@ -77,7 +77,7 @@ export function GuidedTour() {
     setStep(0);
     // The click is a user gesture, so this unlocks the AudioContext.
     try {
-      await getAudioEngine().playDemo();
+      await getAudioEngine().playDemo("chill");
     } catch {
       // visuals still react to whatever else might be playing
     }
