@@ -11,7 +11,7 @@
  * "disconnect the mix bus" — no persistent nodes to track.
  */
 
-export type DemoStyle = "edm" | "synthwave";
+export type DemoStyle = "edm" | "synthwave" | "chill";
 
 export interface DemoStyleInfo {
   name: string;
@@ -20,6 +20,7 @@ export interface DemoStyleInfo {
 export const DEMO_STYLES: Record<DemoStyle, DemoStyleInfo> = {
   edm: { name: "Festival Drop" },
   synthwave: { name: "Synthwave" },
+  chill: { name: "Lofi Chill" },
 };
 
 export const DEFAULT_DEMO_STYLE: DemoStyle = "edm";
@@ -35,9 +36,9 @@ export function buildDemo(
   mix: GainNode,
   noise: AudioBuffer,
 ): DemoBuild {
-  return style === "synthwave"
-    ? buildSynthwave(ctx, mix, noise)
-    : buildEDM(ctx, mix, noise);
+  if (style === "synthwave") return buildSynthwave(ctx, mix, noise);
+  if (style === "chill") return buildLofi(ctx, mix, noise);
+  return buildEDM(ctx, mix, noise);
 }
 
 /* ------------------------------------------------------------------ */
@@ -373,6 +374,132 @@ function buildSynthwave(
 
       // Lush sustained pad once per bar.
       if (inBar === 0) supersaw(ctx, mix, t, ch.notes, beat * 4, 0.07, 2800);
+    },
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/*  Lofi chill — warm boom-bap with jazzy Rhodes 7th chords           */
+/* ------------------------------------------------------------------ */
+
+// ii-V-I-vi in C with lush 7th voicings — the classic mellow lofi loop.
+const LOFI_LOOP: Chord[] = [
+  { root: 73.42, notes: [146.83, 174.61, 220.0, 261.63] }, // Dm7
+  { root: 98.0, notes: [174.61, 196.0, 246.94, 293.66] }, //  G7
+  { root: 65.41, notes: [196.0, 246.94, 261.63, 329.63] }, // Cmaj7
+  { root: 55.0, notes: [196.0, 220.0, 261.63, 329.63] }, //   Am7
+];
+const LOFI_MELODY = [329.63, 392.0, 440.0, 293.66, 261.63];
+
+function buildLofi(
+  ctx: AudioContext,
+  mix: GainNode,
+  noise: AudioBuffer,
+): DemoBuild {
+  const tempo = 76;
+  const sixteenth = 60 / tempo / 4;
+  const beat = sixteenth * 4;
+
+  // Soft, round kick (no click) for that laid-back feel.
+  const softKick = (t: number) => {
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(95, t);
+    o.frequency.exponentialRampToValueAtTime(45, t + 0.14);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.55, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.34);
+    o.connect(g);
+    g.connect(mix);
+    o.start(t);
+    o.stop(t + 0.36);
+    o.onended = () => {
+      o.disconnect();
+      g.disconnect();
+    };
+  };
+
+  const rim = (t: number, amp: number) =>
+    noiseHit(ctx, mix, noise, t, { type: "bandpass", freq: 2200, q: 2, amp, decay: 0.06 });
+  const shaker = (t: number, amp: number) =>
+    noiseHit(ctx, mix, noise, t, { type: "highpass", freq: 6000, amp, decay: 0.045 });
+
+  // Warm electric-piano chord: triangle fundamentals + quiet sine octave,
+  // lowpassed and slow-attacked so it sits back in the mix.
+  const rhodes = (t: number, notes: number[], dur: number, amp: number) => {
+    const lp = ctx.createBiquadFilter();
+    const g = ctx.createGain();
+    lp.type = "lowpass";
+    lp.frequency.value = 1600;
+    lp.Q.value = 0.4;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(amp, t + 0.06);
+    g.gain.setValueAtTime(amp * 0.7, t + dur * 0.5);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    lp.connect(g);
+    g.connect(mix);
+    const oscs: OscillatorNode[] = [];
+    const extra: AudioNode[] = [];
+    for (const f of notes) {
+      const o = ctx.createOscillator();
+      o.type = "triangle";
+      o.frequency.value = f;
+      o.connect(lp);
+      o.start(t);
+      o.stop(t + dur + 0.05);
+      oscs.push(o);
+      const o2 = ctx.createOscillator();
+      const g2 = ctx.createGain();
+      o2.type = "sine";
+      o2.frequency.value = f * 2;
+      g2.gain.value = 0.12;
+      o2.connect(g2);
+      g2.connect(lp);
+      o2.start(t);
+      o2.stop(t + dur + 0.05);
+      oscs.push(o2);
+      extra.push(g2);
+    }
+    oscs[oscs.length - 1].onended = () => {
+      oscs.forEach((o) => o.disconnect());
+      extra.forEach((n) => n.disconnect());
+      lp.disconnect();
+      g.disconnect();
+    };
+  };
+
+  const chordFor = (bar: number) => LOFI_LOOP[bar % LOFI_LOOP.length];
+
+  return {
+    tempo,
+    scheduleStep: (step, t) => {
+      const bar = Math.floor(step / 16);
+      const inBar = step % 16;
+      const ch = chordFor(bar);
+
+      // Laid-back boom-bap: kick on 1 and a syncopated hit, rim on the backbeat.
+      if (inBar === 0) softKick(t);
+      if (inBar === 7) softKick(t);
+      if (inBar === 4 || inBar === 12) rim(t, 0.16);
+
+      // Soft shaker on the offbeat eighths — gentle high-end motion.
+      if (inBar % 2 === 1) shaker(t, 0.03);
+
+      // Sustained Rhodes chord + warm bass, once per bar (lots of space).
+      if (inBar === 0) {
+        rhodes(t, ch.notes, beat * 4, 0.09);
+        sub(ctx, mix, t, ch.root, beat * 2.5, 0.4);
+      }
+      if (inBar === 8) sub(ctx, mix, t, ch.root, beat * 1.5, 0.3);
+
+      // Sparse, mellow lead — a couple of notes every other bar.
+      if (bar % 2 === 1) {
+        if (inBar === 4)
+          pluck(ctx, mix, t, LOFI_MELODY[bar % LOFI_MELODY.length], 0.06, 0.4, "triangle");
+        if (inBar === 10)
+          pluck(ctx, mix, t, LOFI_MELODY[(bar + 2) % LOFI_MELODY.length], 0.05, 0.4, "triangle");
+      }
     },
   };
 }
