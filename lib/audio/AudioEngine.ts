@@ -292,9 +292,17 @@ class AudioEngineSingleton {
     const tempo = 96;
     const sixteenth = 60 / tempo / 4;
     const stepsPerBar = 16;
-    // C major pentatonic + F — classic upbeat filmy phrase shapes
-    const melody = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 440.0, 392.0];
-    const roots = [130.81, 98.0, 110.0, 98.0]; // Sa / Pa drone roots per bar
+    // Raga Bhairavi in C over a fixed Sa drone (Sa, komal re, komal ga, Ma, Pa,
+    // komal dha, komal ni). The flat 2nd/3rd plus the meend glides in sitarPluck
+    // are what read as classical Indian rather than a Western scale.
+    const melody = [
+      261.63, 277.18, 311.13, 349.23, // Sa  re  ga  Ma
+      392.0, 349.23, 311.13, 277.18, //  Pa  Ma  ga  re
+      311.13, 349.23, 392.0, 415.3, //   ga  Ma  Pa  dha
+      392.0, 349.23, 311.13, 261.63, //  Pa  Ma  ga  Sa
+    ];
+    // Hold the tonal centre on Sa; the one Pa visit is modal, not a key change.
+    const roots = [130.81, 130.81, 196.0, 130.81];
 
     const dholKick = (t: number) => {
       const o = ctx.createOscillator();
@@ -358,11 +366,19 @@ class AudioEngineSingleton {
       };
     };
 
-    const sitarPluck = (t: number, freq: number, amp: number) => {
+    const sitarPluck = (
+      t: number,
+      freq: number,
+      amp: number,
+      from?: number,
+    ) => {
+      // Meend: slide in from the previous note (that characteristic sitar bend).
+      const startF = from ?? freq;
       const bp = ctx.createBiquadFilter();
       const g = ctx.createGain();
       bp.type = "bandpass";
-      bp.frequency.value = freq;
+      bp.frequency.setValueAtTime(startF, t);
+      bp.frequency.exponentialRampToValueAtTime(freq, t + 0.09);
       bp.Q.value = 18;
       g.gain.setValueAtTime(0.0001, t);
       g.gain.exponentialRampToValueAtTime(amp, t + 0.004);
@@ -376,7 +392,8 @@ class AudioEngineSingleton {
       src.stop(t + 0.6);
       const o = ctx.createOscillator();
       o.type = "triangle";
-      o.frequency.value = freq;
+      o.frequency.setValueAtTime(startF, t);
+      o.frequency.exponentialRampToValueAtTime(freq, t + 0.09);
       const og = ctx.createGain();
       og.gain.setValueAtTime(0.0001, t);
       og.gain.exponentialRampToValueAtTime(amp * 0.35, t + 0.01);
@@ -406,7 +423,9 @@ class AudioEngineSingleton {
       g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
       lp.connect(g);
       g.connect(mix);
-      const chord = [0, 4, 7];
+      // Open fifths (Sa–Pa–Sa) — no third, so it stays modal like a drone
+      // rather than pulling the ear toward a Western major/minor chord.
+      const chord = [0, 7, 12];
       const oscs = chord.map((n) => {
         const o = ctx.createOscillator();
         o.type = "sawtooth";
@@ -445,6 +464,7 @@ class AudioEngineSingleton {
     startTanpura();
 
     const beat = sixteenth * 4;
+    let prevSitar = melody[0]; // for the meend slide between successive notes
     const scheduleStep = (step: number, t: number) => {
       const bar = Math.floor(step / stepsPerBar);
       const inBar = step % stepsPerBar;
@@ -468,12 +488,14 @@ class AudioEngineSingleton {
 
       if (inBar % 4 === 0) {
         const note = melody[(bar * 4 + inBar / 4) % melody.length];
-        sitarPluck(t, note, fullEnsemble ? 0.22 : 0.1);
+        sitarPluck(t, note, fullEnsemble ? 0.22 : 0.1, prevSitar);
+        prevSitar = note;
       }
 
-      // Shehnai-like lead on bar downbeats — high-mid sparkle for the EQ top.
+      // Shehnai-like lead on bar downbeats — an octave up (stays in raga) for
+      // high-mid sparkle on the EQ top.
       if (fullEnsemble && inBar === 0) {
-        sitarPluck(t, melody[(bar + 3) % melody.length] * 1.5, 0.14);
+        sitarPluck(t, melody[(bar + 3) % melody.length] * 2, 0.14);
       }
     };
 
