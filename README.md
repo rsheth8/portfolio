@@ -1,18 +1,25 @@
-# Rahil Sheth — Portfolio
-
 <p align="center">
-  <img src="docs/brand/logo.png" width="168" alt="Portfolio">
+  <img src="docs/brand/logo.png" width="128" alt="Rahil Sheth">
 </p>
 
+<h1 align="center">Rahil Sheth</h1>
 
-Audio-reactive personal site: visuals pulse to whatever you play, and an Ask AI chat answers from the page’s own project data plus live GitHub stats — it is not allowed to invent internships.
+<p align="center">
+  A portfolio that listens. Ask AI only knows what’s actually on the page.
+</p>
 
-| | |
-| --- | --- |
-| **Author** | [Rahil Sheth](https://github.com/rsheth8) |
-| **Live** | [portfolio-rsheth8s-projects.vercel.app](https://portfolio-rsheth8s-projects.vercel.app/) |
-| **Stack** | Next.js 15, React 19, TypeScript, React Three Fiber, Web Audio, Anthropic tools, MCP |
-| **Status** | Live. Ask AI needs `ANTHROPIC_API_KEY`; the rest of the site works without it. |
+<p align="center">
+  <a href="https://portfolio-rsheth8s-projects.vercel.app/">Live</a>&nbsp;·&nbsp;<a href="https://github.com/rsheth8/portfolio">Source</a>&nbsp;·&nbsp;<a href="CONTRIBUTING.md">Run locally</a>
+</p>
+
+<p align="center">
+  <img alt="Next.js" src="https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=nextdotjs">
+  <img alt="R3F" src="https://img.shields.io/badge/three.js-audio%20reactive-049EF4?style=flat-square">
+</p>
+
+<p align="center"><sub>Ask AI needs ANTHROPIC_API_KEY. The rest of the site does not.</sub></p>
+
+---
 
 ## What this is
 
