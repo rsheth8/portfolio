@@ -1,8 +1,13 @@
 # Rahil Sheth — Portfolio
 
-An audio-reactive "synesthesia" portfolio site: every visual on the page pulses to whatever music you feed it, and a built-in AI assistant can answer questions about the projects shown, grounded in the site's own data (and live GitHub stats).
+Audio-reactive personal site: visuals pulse to whatever you play, and an Ask AI chat answers from the page’s own project data plus live GitHub stats — it is not allowed to invent internships.
 
-**Live site:** [portfolio-rsheth8s-projects.vercel.app](https://portfolio-rsheth8s-projects.vercel.app/)
+| | |
+| --- | --- |
+| **Author** | [Rahil Sheth](https://github.com/rsheth8) |
+| **Live** | [portfolio-rsheth8s-projects.vercel.app](https://portfolio-rsheth8s-projects.vercel.app/) |
+| **Stack** | Next.js 15, React 19, TypeScript, React Three Fiber, Web Audio, Anthropic tools, MCP |
+| **Status** | Live. Ask AI needs `ANTHROPIC_API_KEY`; the rest of the site works without it. |
 
 ## What this is
 
