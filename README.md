@@ -1,5 +1,10 @@
 # Rahil Sheth — Portfolio
 
+<p align="center">
+  <img src="docs/brand/logo.png" width="168" alt="Portfolio">
+</p>
+
+
 Audio-reactive personal site: visuals pulse to whatever you play, and an Ask AI chat answers from the page’s own project data plus live GitHub stats — it is not allowed to invent internships.
 
 | | |
@@ -172,3 +177,10 @@ npm run dev                  # http://localhost:3000
 - **Spotify playback is handled as a special case.** Because the Spotify Web Playback SDK doesn't expose raw PCM/FFT data to the browser, band data for Spotify sources is derived instead from Spotify's own Audio Analysis API, synced to the live playback position, and is already loudness-normalized (so the normal auto-gain step is skipped for that path).
 - **Scenes are lazily loaded.** `LazyScene` defers mounting each WebGL scene (with a lightweight gradient poster shown first) so the initial page load isn't blocked by loading Three.js scenes for sections the visitor hasn't scrolled to yet.
 - **Device-aware rendering.** `lib/ui/deviceTier.ts` and `useReducedMotion` allow scenes to scale down effects on lower-powered devices or when the visitor has requested reduced motion.
+
+## Contributing
+
+PRs and issues welcome. How to run tests, env vars, and the expected layout: [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Don't commit `.env`, API keys, or personal recordings.
+
