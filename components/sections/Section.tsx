@@ -13,6 +13,8 @@ export interface SectionProps {
   scene?: ReactNode;
   /** Total section height in viewport units when scene is present. Default 200. */
   heightVh?: number;
+  /** Render tall content in document flow with the scene behind it. */
+  contentFlow?: boolean;
   children?: ReactNode;
 }
 
@@ -33,6 +35,7 @@ export function Section({
   tone = "ink",
   scene,
   heightVh = 200,
+  contentFlow = false,
   children,
 }: SectionProps) {
   // Plain section — no 3D, single viewport.
@@ -50,6 +53,36 @@ export function Section({
           <Heading label={label} title={title} copy={copy}>
             {children}
           </Heading>
+        </div>
+      </section>
+    );
+  }
+
+  // Editorial section — the scene fills the whole content region while cards
+  // flow at a readable size instead of being squeezed into one sticky screen.
+  if (contentFlow) {
+    return (
+      <section
+        id={id}
+        data-section={id}
+        className={clsx(
+          "relative min-h-screen w-full overflow-hidden",
+          toneClass[tone],
+        )}
+      >
+        <div className="pointer-events-none absolute inset-0">
+          <div className="sticky top-0 h-screen overflow-hidden">{scene}</div>
+        </div>
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-ink/50 via-ink/20 to-ink/85"
+        />
+        <div className="relative z-10 px-4 py-28 sm:px-8 sm:py-36">
+          <div className="mx-auto w-full max-w-5xl">
+            <Heading label={label} title={title} copy={copy}>
+              {children}
+            </Heading>
+          </div>
         </div>
       </section>
     );
@@ -93,14 +126,14 @@ function Heading({
 }) {
   return (
     <>
-      <div className="mb-4 font-mono text-[10px] uppercase tracking-[0.25em] opacity-60 sm:mb-6 sm:text-xs sm:tracking-[0.4em]">
+      <div className="mb-4 font-mono text-xs uppercase tracking-[0.22em] opacity-65 sm:mb-6 sm:text-sm sm:tracking-[0.32em]">
         {label}
       </div>
       <h2 className="font-display text-4xl font-light leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] sm:text-5xl md:text-7xl">
         {title}
       </h2>
       {copy && (
-        <p className="mt-6 max-w-2xl text-base leading-relaxed opacity-80 drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)] sm:mt-8 sm:text-lg md:text-xl">
+        <p className="mt-6 max-w-3xl text-base leading-relaxed opacity-85 drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)] sm:mt-8 sm:text-lg md:text-xl">
           {copy}
         </p>
       )}

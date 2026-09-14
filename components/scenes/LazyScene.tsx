@@ -19,17 +19,20 @@ import { useReducedMotion } from "@/lib/ui/useReducedMotion";
 export function LazyScene({
   children,
   poster,
+  eager = false,
 }: {
   children: ReactNode;
   /** Tailwind gradient stop (e.g. "from-bass/25") for the static fallback. */
   poster: string;
+  /** Mount immediately for the first-viewport scene. */
+  eager?: boolean;
 }) {
   const reduced = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
-  const [near, setNear] = useState(false);
+  const [near, setNear] = useState(eager);
 
   useEffect(() => {
-    if (reduced) return; // poster only — no observer needed
+    if (reduced || eager) return; // poster-only or already mounted
     const el = ref.current;
     if (!el) return;
     const io = new IntersectionObserver(
@@ -37,11 +40,11 @@ export function LazyScene({
       // Pre-mount half a viewport early so the context is created before the
       // scene scrolls in (its fade-in hides the init), but keep the simultaneous
       // mounted count low to avoid hitting per-tab WebGL context limits.
-      { rootMargin: "50% 0px 50% 0px" },
+      { rootMargin: "25% 0px 25% 0px" },
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [reduced]);
+  }, [reduced, eager]);
 
   if (reduced) {
     return (

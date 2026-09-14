@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { getAudioEngine } from "@/lib/audio/AudioEngine";
 import { useAudioState } from "@/lib/audio/useAudioAnalyser";
 
@@ -19,10 +18,36 @@ export function SoundNudge() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    if (localStorage.getItem(STORAGE_KEY)) return;
+    try {
+      if (localStorage.getItem(STORAGE_KEY)) return;
+    } catch {
+      // Storage can be unavailable in hardened/private browser modes.
+    }
     // Let the hero settle before sliding in.
-    const t = window.setTimeout(() => setShow(true), 1600);
-    return () => window.clearTimeout(t);
+    const t = window.setTimeout(() => {
+      const hero = document.getElementById("hero");
+      if (!hero) return;
+      const rect = hero.getBoundingClientRect();
+      if (rect.top < window.innerHeight && rect.bottom > 0) setShow(true);
+    }, 1600);
+
+    // If a visitor jumps directly to a project track, don't cover their work
+    // with a hero-only onboarding prompt.
+    const hero = document.getElementById("hero");
+    const observer = hero
+      ? new IntersectionObserver(
+          ([entry]) => {
+            if (!entry.isIntersecting) setShow(false);
+          },
+          { threshold: 0.1 },
+        )
+      : null;
+    if (hero && observer) observer.observe(hero);
+
+    return () => {
+      window.clearTimeout(t);
+      observer?.disconnect();
+    };
   }, []);
 
   // Any audio starting means they found it — dismiss for good.
@@ -56,15 +81,9 @@ export function SoundNudge() {
   }
 
   return (
-    <AnimatePresence>
-      {show && (
-        <motion.div
-          initial={{ opacity: 0, y: 12, scale: 0.96 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 12, scale: 0.96 }}
-          transition={{ type: "spring", stiffness: 320, damping: 26 }}
-          style={{ transformOrigin: "bottom right" }}
-          className="pointer-events-auto fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] right-[max(1rem,env(safe-area-inset-right))] z-40 w-[min(17rem,calc(100vw-2rem))] rounded-2xl border border-accent/30 bg-graphite/95 p-4 font-mono text-xs text-cream shadow-2xl backdrop-blur-xl sm:bottom-20 sm:right-6"
+    show ? (
+        <div
+          className="ui-rise-in pointer-events-auto fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] right-[max(1rem,env(safe-area-inset-right))] z-40 w-[min(17rem,calc(100vw-2rem))] origin-bottom-right rounded-2xl border border-accent/30 bg-graphite/95 p-4 font-mono text-xs text-cream shadow-2xl backdrop-blur-xl sm:bottom-20 sm:right-6"
         >
           <div className="mb-1 flex items-center justify-between">
             <span className="text-[10px] uppercase tracking-[0.2em] text-accent">
@@ -90,8 +109,7 @@ export function SoundNudge() {
           </button>
           {/* Pointer toward the audio pill below. */}
           <div className="absolute -bottom-1.5 right-7 h-3 w-3 rotate-45 border-b border-r border-accent/30 bg-graphite/95" />
-        </motion.div>
-      )}
-    </AnimatePresence>
+        </div>
+    ) : null
   );
 }

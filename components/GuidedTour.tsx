@@ -95,7 +95,7 @@ export function GuidedTour() {
   return (
     <div className="pointer-events-auto fixed left-[max(0.75rem,env(safe-area-inset-left))] top-[calc(env(safe-area-inset-top)+4.75rem)] z-40 sm:left-4 sm:top-4">
       {running ? (
-        <div className="flex items-center gap-2 rounded-full border border-accent/40 bg-graphite/90 px-3 py-2 font-mono text-[10px] uppercase tracking-wider text-cream shadow-2xl backdrop-blur-md">
+        <div className="flex items-center gap-2 rounded-full border border-accent/40 bg-graphite/90 px-3 py-2 font-mono text-xs uppercase tracking-wider text-cream shadow-2xl backdrop-blur-md">
           <span className="hidden text-accent sm:inline">Touring ·</span>
           <span className="text-bone">{STEPS[step].label}</span>
           <span className="flex items-center gap-1">
@@ -119,7 +119,7 @@ export function GuidedTour() {
       ) : (
         <button
           onClick={start}
-          className="flex min-h-[36px] items-center gap-2 rounded-full border border-bone/15 bg-graphite/85 px-3 py-2 font-mono text-[10px] uppercase tracking-wider text-cream shadow-2xl backdrop-blur-md transition-colors hover:border-accent/50"
+          className="flex min-h-[40px] items-center gap-2 rounded-full border border-bone/15 bg-graphite/85 px-3 py-2 font-mono text-xs uppercase tracking-wider text-cream shadow-2xl backdrop-blur-md transition-colors hover:border-accent/50"
         >
           <span className="text-accent">▶</span>
           <span className="text-bone">30s tour</span>

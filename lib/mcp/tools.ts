@@ -27,8 +27,10 @@ function findProject(name: string): Project | undefined {
 function formatProject(p: Project, role?: string): string {
   const lines = [
     `Name: ${p.name}`,
+    `Type: ${p.label}`,
     role ? `Role track: ${role}` : null,
     `Blurb: ${p.blurb}`,
+    `Proof point: ${p.proof}`,
     `Tech: ${p.tech.join(", ")}`,
     p.repo ? `Repo: ${p.repo}` : null,
     p.demo ? `Demo: ${p.demo}` : null,
@@ -152,7 +154,10 @@ export const portfolioTools: PortfolioTool[] = [
           (g) =>
             `${g.role} (${g.id}):\n` +
             g.projects
-              .map((p) => `  - ${p.name}: ${p.blurb} [${p.tech.join(", ")}]`)
+              .map(
+                (p) =>
+                  `  - ${p.name} (${p.label}): ${p.blurb} Proof: ${p.proof}. [${p.tech.join(", ")}]`,
+              )
               .join("\n"),
         )
         .join("\n\n");

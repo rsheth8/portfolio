@@ -2,12 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import Lenis from "lenis";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger);
-}
 
 export function LenisProvider({ children }: { children: React.ReactNode }) {
   const lenisRef = useRef<Lenis | null>(null);
@@ -18,9 +12,8 @@ export function LenisProvider({ children }: { children: React.ReactNode }) {
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if (prefersReduced) {
-      // Skip smooth scroll entirely. Native scroll + reduced-motion fallback
-      // in globals.css handles the rest. ScrollTrigger still works on native scroll.
-      ScrollTrigger.refresh();
+      // Skip smooth scroll entirely. Native scrolling and the reduced-motion
+      // fallback in globals.css handle the rest.
       return;
     }
 
@@ -38,18 +31,19 @@ export function LenisProvider({ children }: { children: React.ReactNode }) {
     });
     lenisRef.current = lenis;
 
-    // Bridge Lenis -> GSAP ScrollTrigger so scrubbed animations track smoothly.
-    lenis.on("scroll", ScrollTrigger.update);
-
-    gsap.ticker.add((time) => {
-      lenis.raf(time * 1000);
-    });
-    gsap.ticker.lagSmoothing(0);
+    // Drive Lenis directly. This avoids loading GSAP solely as a ticker.
+    let rafId = 0;
+    const frame = (time: number) => {
+      lenis.raf(time);
+      rafId = window.requestAnimationFrame(frame);
+    };
+    rafId = window.requestAnimationFrame(frame);
 
     // Expose for components that want to scrollTo (e.g. nav links, TARS handoffs).
     (window as Window & { __lenis?: Lenis }).__lenis = lenis;
 
     return () => {
+      window.cancelAnimationFrame(rafId);
       lenis.destroy();
       lenisRef.current = null;
       delete (window as Window & { __lenis?: Lenis }).__lenis;

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { motion } from "framer-motion";
 import { skillGroups } from "@/data/site";
 import { useAudioAnalyser, type AudioBands } from "@/lib/audio/useAudioAnalyser";
 
@@ -67,13 +66,9 @@ export function SkillsEqualizer() {
       className="grid w-full grid-cols-2 gap-3 lg:grid-cols-3"
     >
       {skillGroups.map((group, gi) => (
-        <motion.div
+        <div
           key={group.label}
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.4 }}
-          transition={{ duration: 0.5, delay: gi * 0.08, ease: "easeOut" }}
-          className="rounded-lg border p-3 backdrop-blur-md bg-ink/50"
+          className="rounded-xl border bg-ink/60 p-4 backdrop-blur-md"
           style={{ borderColor: `${group.color}33` }}
         >
           {/* Channel header */}
@@ -86,7 +81,7 @@ export function SkillsEqualizer() {
               }}
             />
             <span
-              className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em]"
+              className="font-mono text-xs font-semibold uppercase tracking-[0.16em]"
               style={{ color: group.color }}
             >
               {group.label}
@@ -99,7 +94,7 @@ export function SkillsEqualizer() {
               <li key={skill} className="flex items-center gap-2">
                 <span
                   title={skill}
-                  className="w-[5.5rem] shrink-0 truncate font-mono text-[10px] text-bone/75"
+                  className="w-[6.5rem] shrink-0 truncate font-mono text-xs text-bone/75"
                 >
                   {skill}
                 </span>
@@ -120,7 +115,7 @@ export function SkillsEqualizer() {
               </li>
             ))}
           </ul>
-        </motion.div>
+        </div>
       ))}
     </div>
   );

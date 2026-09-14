@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import {
   notifyCornerPanelOpen,
   onCornerPanelOpen,
@@ -14,18 +13,17 @@ interface Msg {
 
 const SUGGESTIONS = [
   "What kind of work does Rahil do?",
-  "Tell me about the ML projects.",
-  "How many stars does MyDrive have on GitHub?",
+  "Which projects can I try live?",
+  "Tell me about Human–AI Discovery.",
 ];
 
 /**
  * Bottom-left chat widget — an LLM grounded in the portfolio data
  * (see app/api/chat/route.ts). Streams the response token by token.
  *
- * Framer Motion drives the UI motion: the panel springs open/closed via
- * AnimatePresence, each message animates in, and the pill reacts to hover/tap.
- * Sits opposite the audio picker (bottom-right) so the corner controls never
- * overlap.
+ * Lightweight CSS transitions handle the small UI motions so opening the page
+ * does not require a general-purpose animation library. Sits opposite the
+ * audio picker (bottom-right) so the corner controls never overlap.
  */
 export function AskAI() {
   const [open, setOpen] = useState(false);
@@ -122,20 +120,14 @@ export function AskAI() {
   return (
     <div className="pointer-events-auto fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-[max(1rem,env(safe-area-inset-left))] z-50 sm:bottom-6 sm:left-6">
       {/* Expanded chat panel */}
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: 16, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16, scale: 0.96 }}
-            transition={{ type: "spring", stiffness: 320, damping: 28 }}
-            style={{ transformOrigin: "bottom left" }}
+      {open && (
+          <div
             data-lenis-prevent
-            className="fixed inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] flex max-h-[min(28rem,calc(100dvh-7.5rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)))] flex-col overflow-hidden rounded-2xl border border-bone/15 bg-graphite/95 font-mono text-xs text-cream shadow-2xl backdrop-blur-xl sm:absolute sm:inset-x-auto sm:bottom-full sm:left-0 sm:mb-3 sm:h-[28rem] sm:w-[22rem] sm:max-h-none sm:max-w-[calc(100vw-3rem)]"
+            className="ui-rise-in fixed inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] flex max-h-[min(28rem,calc(100dvh-7.5rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)))] origin-bottom-left flex-col overflow-hidden rounded-2xl border border-bone/15 bg-graphite/95 font-mono text-xs text-cream shadow-2xl backdrop-blur-xl sm:absolute sm:inset-x-auto sm:bottom-full sm:left-0 sm:mb-3 sm:h-[28rem] sm:w-[22rem] sm:max-h-none sm:max-w-[calc(100vw-3rem)]"
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-bone/10 px-4 py-3">
-              <span className="text-[10px] uppercase tracking-[0.25em] text-mute">
+              <span className="text-xs uppercase tracking-[0.2em] text-mute">
                 Ask about my work
               </span>
               <button
@@ -175,12 +167,9 @@ export function AskAI() {
               )}
 
               {messages.map((m, i) => (
-                <motion.div
+                <div
                   key={i}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25, ease: "easeOut" }}
-                  className={m.role === "user" ? "text-right" : "text-left"}
+                  className={`ui-message-in ${m.role === "user" ? "text-right" : "text-left"}`}
                 >
                   <span
                     className={`inline-block max-w-[85%] whitespace-pre-wrap rounded-lg px-3 py-2 text-left leading-relaxed ${
@@ -192,7 +181,7 @@ export function AskAI() {
                     {m.content ||
                       (busy && i === messages.length - 1 ? "…" : "")}
                   </span>
-                </motion.div>
+                </div>
               ))}
             </div>
 
@@ -212,37 +201,31 @@ export function AskAI() {
                   e.currentTarget.scrollIntoView({ block: "nearest", behavior: "smooth" });
                 }}
                 placeholder="Type a question…"
-                className="min-h-[44px] min-w-0 flex-1 rounded-lg border border-bone/15 bg-ink/60 px-3 py-2 text-base text-cream placeholder:text-mute focus:border-mid/50 focus:outline-none sm:min-h-0 sm:text-[11px]"
+                className="min-h-[44px] min-w-0 flex-1 rounded-lg border border-bone/15 bg-ink/60 px-3 py-2 text-base text-cream placeholder:text-mute focus:border-mid/50 focus:outline-none sm:min-h-0 sm:text-sm"
               />
               <button
                 type="submit"
                 disabled={busy || !input.trim()}
-                className="min-h-[44px] rounded-lg border border-mid/40 px-3 py-2 text-[10px] uppercase tracking-wider text-mid transition-colors hover:bg-mid/10 disabled:opacity-40 sm:min-h-0"
+                className="min-h-[44px] rounded-lg border border-mid/40 px-3 py-2 text-xs uppercase tracking-wider text-mid transition-colors hover:bg-mid/10 disabled:opacity-40 sm:min-h-0"
               >
                 {busy ? "…" : "Send"}
               </button>
             </form>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+      )}
 
       {/* Collapsed pill — always visible */}
-      <motion.button
+      <button
         onClick={toggleOpen}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        transition={{ type: "spring", stiffness: 400, damping: 22 }}
-        className="flex min-h-[44px] items-center gap-2 rounded-full border border-bone/15 bg-graphite/85 px-4 py-2.5 font-mono text-xs uppercase tracking-wider text-cream shadow-2xl backdrop-blur-md hover:border-mid/40"
+        className="flex min-h-[44px] items-center gap-2 rounded-full border border-bone/15 bg-graphite/85 px-4 py-2.5 font-mono text-xs uppercase tracking-wider text-cream shadow-2xl backdrop-blur-md transition duration-200 hover:scale-[1.03] hover:border-mid/40 active:scale-[0.97]"
       >
-        <motion.span
-          className="text-mid"
-          animate={{ rotate: open ? 90 : 0 }}
-          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        <span
+          className={`text-mid transition-transform duration-200 ${open ? "rotate-90" : ""}`}
         >
           ✦
-        </motion.span>
+        </span>
         <span className="text-bone">{open ? "Close" : "Ask AI"}</span>
-      </motion.button>
+      </button>
     </div>
   );
 }

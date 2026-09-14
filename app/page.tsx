@@ -46,7 +46,13 @@ const contactLinks = [
  */
 export default function Page() {
   return (
-    <main className="relative">
+    <main id="main-content" className="relative">
+      <a
+        href="#hero-actions"
+        className="fixed left-4 top-4 z-[100] -translate-y-24 rounded-full bg-cream px-4 py-2 font-mono text-sm text-ink transition-transform focus:translate-y-0"
+      >
+        Skip to content
+      </a>
       <ThemeController />
       <DropFlash />
       <ScrollProgress />
@@ -63,21 +69,40 @@ export default function Page() {
         id="hero"
         label="00 — Pulse"
         title="Rahil Sheth"
-        copy="Press the bottom-right corner. Pick something. Watch it react."
+        copy="I build ambitious software across AI, data, and the web — from safer routes to real-time lyric sync. Pick a role above, or add a soundtrack and explore."
         tone="ink"
         heightVh={220}
         scene={
-          <LazyScene poster="from-bass/25">
+          <LazyScene poster="from-bass/25" eager>
             <HeroOrbSceneClient />
           </LazyScene>
         }
-      />
+      >
+        <div
+          id="hero-actions"
+          tabIndex={-1}
+          className="flex flex-wrap gap-3 font-mono text-xs uppercase tracking-wider focus:outline-none sm:text-sm"
+        >
+          <a
+            href="#ml-projects"
+            className="rounded-full border border-cream/40 bg-cream px-5 py-3 text-ink transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            Explore selected work ↓
+          </a>
+          <a
+            href={`mailto:${profile.email}`}
+            className="rounded-full border border-bone/25 bg-ink/55 px-5 py-3 text-cream backdrop-blur-md transition hover:border-mid/70 hover:text-mid focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            Start a conversation ↗
+          </a>
+        </div>
+      </Section>
 
       <Section
         id="about"
         label="01 — Track 01"
-        title="What I do."
-        copy="Full-stack systems, machine learning, the messy bits in between. The waveform is whatever you're playing."
+        title="Complex underneath. Clear on top."
+        copy="I turn complicated systems into products people can actually use: evaluated ML, reliable pipelines, polished interfaces, and fallback paths that keep the experience working."
         tone="ink"
         heightVh={200}
         scene={
@@ -106,10 +131,11 @@ export default function Page() {
       <Section
         id="ml-projects"
         label={`${group["ml-projects"].track} · ${group["ml-projects"].role}`}
-        title="Models that decide."
+        title="Models, measured."
         copy={group["ml-projects"].copy}
         tone="ink"
         heightVh={220}
+        contentFlow
         scene={
           <LazyScene poster="from-bass/20">
             <ParticleBurstSceneClient />
@@ -122,10 +148,11 @@ export default function Page() {
       <Section
         id="infra-projects"
         label={`${group["infra-projects"].track} · ${group["infra-projects"].role}`}
-        title="Systems that move data."
+        title="Pipelines with a purpose."
         copy={group["infra-projects"].copy}
         tone="ink"
         heightVh={220}
+        contentFlow
         scene={
           <LazyScene poster="from-ice/15">
             <WarpGridSceneClient />
@@ -142,7 +169,8 @@ export default function Page() {
         copy={group["consumer-projects"].copy}
         tone="ink"
         heightVh={220}
-        scene={<GlitchTypeBackdrop tokens={["PANTRY", "HINDSIGHT", "DISTILL"]} />}
+        contentFlow
+        scene={<GlitchTypeBackdrop tokens={["BAR4BAR", "HINDSIGHT", "DISTILL"]} />}
       >
         <ProjectGrid id="consumer-projects" />
       </Section>
@@ -150,8 +178,8 @@ export default function Page() {
       <Section
         id="contact"
         label="06 — Outro"
-        title="Find me."
-        copy=""
+        title="Let’s make something useful."
+        copy="Have a role, a project, or a hard problem that fits? Email is the fastest way to reach me."
         tone="ink"
         heightVh={180}
         scene={
@@ -160,17 +188,18 @@ export default function Page() {
           </LazyScene>
         }
       >
-        <div className="grid gap-4 font-mono text-sm sm:grid-cols-2 md:grid-cols-4">
+        <div className="grid gap-3 font-mono text-sm sm:grid-cols-2 md:grid-cols-4">
           {contactLinks.map((link) => (
             <a
               key={link.label}
-              className="rounded border border-bone/20 p-4 backdrop-blur-sm bg-ink/40 transition-colors hover:bg-bone/5"
+              className="group flex min-h-20 items-center justify-between rounded-xl border border-bone/20 bg-ink/55 p-5 backdrop-blur-md transition duration-300 hover:-translate-y-0.5 hover:border-mid/50 hover:bg-bone/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               href={link.href}
               {...(link.external
                 ? { target: "_blank", rel: "noreferrer" }
                 : {})}
             >
-              {link.label}
+              <span>{link.label}</span>
+              <span className="text-mute transition group-hover:text-mid">↗</span>
             </a>
           ))}
         </div>

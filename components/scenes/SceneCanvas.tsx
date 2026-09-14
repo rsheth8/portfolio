@@ -94,7 +94,7 @@ export function SceneCanvas({
         // poster shows through meanwhile. Deliberately NOT tied to `visible`, so
         // an offscreen-paused canvas just freezes its last frame rather than
         // blanking; only context loss hides it.
-        className={`transition-opacity duration-700 ${
+        className={`transition-opacity duration-300 ${
           ready && !lost ? "opacity-100" : "opacity-0"
         }`}
         dpr={[1, quality.dprCap]}

@@ -24,8 +24,12 @@ export interface Profile {
 export interface Project {
   /** Display name. */
   name: string;
+  /** Short project type shown above the name. */
+  label: string;
   /** One-line description shown on the card. */
   blurb: string;
+  /** Concrete scale, capability, or delivery signal shown on the card. */
+  proof: string;
   /** Tech tags rendered as chips. */
   tech: string[];
   /** Repo URL. Empty string hides the link. */
@@ -68,30 +72,46 @@ export const projectGroups: ProjectGroup[] = [
     accent: "bass",
     role: "AI / Machine Learning",
     track: "03",
-    copy: "Models and inference — accident-risk scoring, sentiment comparison, and computer vision.",
+    copy: "Reproducible research, risk models, computer vision, and grounded retrieval — with evaluation in the loop.",
     projects: [
       {
-        name: "MyDrive",
+        name: "Human–AI Discovery",
+        label: "Research simulation",
         blurb:
-          "Chicagoland route planner that scores every road segment with an XGBoost accident-risk model, then compares up to 8 routes by time, tolls, calm, and safety.",
+          "A reproducible testbed for a hard recommender-systems question: should an AI optimize for learning a person's taste, or for helping them discover valuable new territory?",
+        proof: "640 trajectories · 25,600 recommendations",
+        tech: ["Python", "Bayesian modeling", "NetworkX", "Plotly"],
+        repo: "https://github.com/rsheth8/Human-AI-Discovery",
+        demo: "",
+      },
+      {
+        name: "MyDrive",
+        label: "ML route planning",
+        blurb:
+          "A Chicagoland route planner that scores road segments with an XGBoost accident-risk model, then compares routes by time, tolls, calm, and safety.",
+        proof: "Scores and compares up to 8 routes",
         tech: ["Python", "XGBoost", "FastAPI", "Streamlit", "OpenStreetMap"],
         repo: "https://github.com/rsheth8/MyDrive",
         demo: "",
       },
       {
-        name: "movie-sentiment-comparison",
+        name: "Storelytics",
+        label: "Computer vision",
         blurb:
-          "Head-to-head sentiment classification on Rotten Tomatoes — a frozen-embedding PyTorch MLP vs. zero-shot Flan-T5 — with a breakdown of where each one fails.",
-        tech: ["PyTorch", "Sentence-Transformers", "Flan-T5", "Jupyter"],
-        repo: "https://github.com/rsheth8/movie-sentiment-comparison",
+          "Turns a doorway camera into visit counts, dwell time, and aggregate audience signals using face re-identification—while retaining encodings instead of photos.",
+        proof: "Encodings retained · source photos discarded",
+        tech: ["Python", "OpenCV", "DeepFace", "Redis", "Firebase"],
+        repo: "https://github.com/rsheth8/Storelytics",
         demo: "",
       },
       {
-        name: "Storelytics",
+        name: "Textbook RAG",
+        label: "Grounded retrieval",
         blurb:
-          "Turns one storefront camera into live foot-traffic analytics — entries, dwell time, and inferred demographics via face re-identification and DeepFace.",
-        tech: ["Python", "OpenCV", "DeepFace", "Redis", "Firebase"],
-        repo: "https://github.com/rsheth8/Storelytics",
+          "A Java learning assistant that ingests textbook PDFs, retrieves the most relevant passage, and keeps answers grounded in the uploaded source.",
+        proof: "Local Ollama or Open WebUI backend",
+        tech: ["Java 17", "Spring Boot", "PostgreSQL", "PDFBox", "Ollama"],
+        repo: "https://github.com/rsheth8/Textbook_RAG_Assistant",
         demo: "",
       },
     ],
@@ -101,30 +121,36 @@ export const projectGroups: ProjectGroup[] = [
     accent: "mid",
     role: "Data Engineering",
     track: "04",
-    copy: "Pipelines, analytics, and the backend systems behind the apps.",
+    copy: "Audio, documents, cost, and behavior turned into reliable data products.",
     projects: [
       {
+        name: "CatchMeUp",
+        label: "Local AI pipeline",
+        blurb:
+          "A local-first macOS and iPhone workspace that turns missed meetings or lectures into recaps, decisions, action items, study guides, and source-grounded answers.",
+        proof: "Recording → transcript → Word + Markdown",
+        tech: ["Python", "SwiftUI", "WhisperKit", "ffmpeg", "Claude"],
+        repo: "https://github.com/rsheth8/CatchMeUp",
+        demo: "",
+      },
+      {
         name: "InfraTrack",
+        label: "Cloud FinOps",
         blurb:
           "Cloud-spend dashboard for engineering teams — per-service AWS tracking, month-to-date budget burn, and threshold email alerts.",
+        proof: "Team budgets · daily spend · alerts",
         tech: ["FastAPI", "SQLAlchemy", "Postgres", "React", "Vite"],
         repo: "https://github.com/rsheth8/InfraTrack",
         demo: "",
       },
       {
         name: "SongSift",
+        label: "Audio intelligence",
         blurb:
           "End-to-end music workbench — extracts audio features with librosa, recommends and clusters tracks, builds a similarity graph, and beat-matches mashups.",
+        proof: "Local-first audio processing",
         tech: ["Python", "librosa", "Flask", "React", "TypeScript"],
         repo: "https://github.com/rsheth8/SongSift",
-        demo: "",
-      },
-      {
-        name: "ai-slack-bot",
-        blurb:
-          "Go Slack bot that answers natural-language questions in-channel by routing them through Wit.ai intent extraction and Wolfram Alpha.",
-        tech: ["Go", "Slack API", "Wit.ai", "Wolfram Alpha"],
-        repo: "https://github.com/rsheth8/ai-slack-bot",
         demo: "",
       },
     ],
@@ -134,36 +160,44 @@ export const projectGroups: ProjectGroup[] = [
     accent: "high",
     role: "Software Engineering",
     track: "05",
-    copy: "Full-stack products, web and mobile — shipped end to end for real users.",
+    copy: "End-to-end web, desktop, and mobile products — with live demos and graceful fallback paths.",
     projects: [
       {
-        name: "PantryPal",
+        name: "Bar4Bar",
+        label: "Real-time media",
         blurb:
-          "Collaborative pantry app for families and roommates — shared grocery tracking, expiration alerts, recipe matching, and AI meal planning.",
-        tech: ["React Native", "Expo", "TypeScript"],
-        repo: "https://github.com/rsheth8/PantryPal",
-        demo: "",
+          "Projector karaoke that identifies what's playing, resolves or generates timed lyrics, and keeps every word synchronized across a main display and second screen.",
+        proof: "Web · Electron · tvOS",
+        tech: ["JavaScript", "Electron", "Whisper", "Web Audio", "Swift"],
+        repo: "https://github.com/rsheth8/smart_lyric",
+        demo: "https://smartlyric.vercel.app",
+      },
+      {
+        name: "Record Finder",
+        label: "Recommendation product",
+        blurb:
+          "Vinyl discovery from a taste quiz or Spotify history, enriched with Discogs catalog data, fair-value signals, wishlists, and price-drop alerts.",
+        proof: "7-step taste quiz · live catalog data",
+        tech: ["Next.js", "TypeScript", "Drizzle", "Discogs", "Spotify"],
+        repo: "https://github.com/rsheth8/record_finder",
+        demo: "https://record-finder-nine.vercel.app",
       },
       {
         name: "Hindsight",
+        label: "Learning game",
         blurb:
-          "A daily investing puzzle — 'chess.com for investing' — that grades your judgment and calibration rather than your luck, with a luck-resistant Elo-style rating.",
-        tech: ["Next.js", "TypeScript", "Claude API", "FMP API"],
+          "A daily investing puzzle that grades judgment, calibration, and written reasoning—not just whether a noisy market call happened to be right.",
+        proof: "Daily game · 3-part skill rating",
+        tech: ["Next.js", "TypeScript", "React Native", "Claude", "Vitest"],
         repo: "https://github.com/rsheth8/Hindsight",
-        demo: "",
+        demo: "https://hindsight-one.vercel.app",
       },
       {
-        name: "MSAD",
-        blurb:
-          "An educational stock-analysis dashboard — a 'trading gym' with a grounded AI tutor, a conviction journal, and calibration scoring. Built with Aastik Mishra.",
-        tech: ["Next.js", "TypeScript", "Claude API"],
-        repo: "https://github.com/rsheth8/MSAD",
-        demo: "",
-      },
-      {
-        name: "distill",
+        name: "Distill",
+        label: "Browser extension",
         blurb:
           "A Chrome extension that helps you read long articles — progressive AI summaries, comprehension check-ins, and focus tools, with bring-your-own-key AI.",
+        proof: "Bring-your-own-key AI",
         tech: ["Chrome Extension (MV3)", "JavaScript", "Groq", "LLM"],
         repo: "https://github.com/rsheth8/distill",
         demo: "",
@@ -198,30 +232,30 @@ export const skillGroups: SkillGroup[] = [
     label: "Languages",
     color: "#ff3a7a", // bass — magenta
     band: "bass",
-    skills: ["Python", "TypeScript", "Go", "Java", "JavaScript", "SQL"],
+    skills: ["Python", "TypeScript", "Swift", "Go", "Java", "SQL"],
   },
   {
     label: "AI / ML",
     color: "#b14dff", // accent — violet
     band: "mid",
-    skills: ["PyTorch", "scikit-learn", "XGBoost", "OpenCV", "LLM / Claude API"],
+    skills: ["PyTorch", "scikit-learn", "XGBoost", "OpenCV", "Bayesian modeling", "RAG"],
   },
   {
     label: "Backend & Data",
     color: "#00d6ff", // mid — cyan
     band: "lowMid",
-    skills: ["FastAPI", "Flask", "Node.js", "PostgreSQL", "Redis"],
+    skills: ["FastAPI", "Spring Boot", "Node.js", "PostgreSQL", "Redis", "Drizzle ORM"],
   },
   {
     label: "Web & Mobile",
     color: "#ffe66c", // high — yellow
     band: "highMid",
-    skills: ["React", "Next.js", "React Native", "Tailwind", "Expo"],
+    skills: ["React", "Next.js", "React Native", "SwiftUI", "Electron", "Expo"],
   },
   {
     label: "Tools & Cloud",
     color: "#8aa8c8", // ice — cold blue
     band: "high",
-    skills: ["Docker", "Git", "Firebase", "AWS", "Vercel"],
+    skills: ["Docker", "Git", "AWS", "Vercel", "Playwright", "Vitest"],
   },
 ];

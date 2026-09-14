@@ -81,7 +81,7 @@ export function RoleNav() {
                 onClick={() => go(n.id)}
                 aria-current={isActive ? "true" : undefined}
                 className={clsx(
-                  "min-h-[44px] whitespace-nowrap rounded-full border px-3 py-1.5 text-[10px] uppercase tracking-wider transition-colors sm:min-h-0",
+                  "min-h-[44px] whitespace-nowrap rounded-full border px-3 py-1.5 text-xs uppercase tracking-wider transition-colors sm:min-h-0 sm:px-4",
                   isActive
                     ? accentActive[n.accent]
                     : "border-transparent text-bone/70 hover:text-cream",
